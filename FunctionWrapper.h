@@ -158,139 +158,112 @@ public:
     std::list<ArgumentWrapper*>& getArgWList(){
         return argWList;
     }
-
-    static std::map<const CallInst *,CallWrapper *> callMap;
-
 };
 
+static std::map<const CallInst *, CallWrapper *> callMap;
 
-//FunctionWrapper
+// FunctionWrapper
 class FunctionWrapper {
 
 private:
-    Function *Func;
-    InstructionWrapper* entryW;
-    std::list<llvm::StoreInst*> storeInstList;
-    std::list<llvm::LoadInst*> loadInstList;
-    std::list<llvm::Instruction*> returnInstList;
-    std::list<llvm::CallInst*> callInstList;
-    std::list<ArgumentWrapper*> argWList;
-    std::set<llvm::Value*> ptrSet;
+  Function *Func;
+  InstructionWrapper *entryW;
+  std::list<llvm::StoreInst *> storeInstList;
+  std::list<llvm::LoadInst *> loadInstList;
+  std::list<llvm::Instruction *> returnInstList;
+  std::list<llvm::CallInst *> callInstList;
+  std::list<ArgumentWrapper *> argWList;
+  std::set<llvm::Value *> ptrSet;
 
-    bool treeFlag = false;
-    bool visited = false;
+  bool treeFlag = false;
+  bool visited = false;
 
 public:
+  FunctionWrapper(Function *Func) {
 
-    FunctionWrapper(Function *Func) {
+    this->Func = Func;
+    //  Function::ArgumentListType& callee_args = Func->getArgumentList();
+    for (Function::arg_iterator argIt = Func->arg_begin(),
+                                argE = Func->arg_end();
+         argIt != argE; ++argIt) {
 
-        this->Func = Func;
-        //  Function::ArgumentListType& callee_args = Func->getArgumentList();
-        for(Function::arg_iterator argIt = Func->arg_begin(),
-                    argE = Func->arg_end(); argIt != argE; ++argIt){
+      ArgumentWrapper *argW = new ArgumentWrapper(&*argIt);
+      argWList.push_back(argW);
+    }
+  }
 
-            ArgumentWrapper *argW = new ArgumentWrapper(&*argIt);
-            argWList.push_back(argW);
+  bool hasTrees() { return treeFlag; }
+
+  void setTreeFlag(bool flag) { this->treeFlag = flag; }
+
+  bool isVisited() { return visited; }
+
+  void setVisited(bool flag) { this->visited = flag; }
+
+  Function *getFunction() { return Func; }
+
+  void setEntry(InstructionWrapper *entry) {
+    errs() << "Hello \n";
+    this->entryW = entry;
+  }
+
+  InstructionWrapper *getEntry() { return entryW; }
+
+  std::list<ArgumentWrapper *> &getArgWList() { return argWList; }
+
+  std::list<llvm::StoreInst *> &getStoreInstList() { return storeInstList; }
+
+  std::list<llvm::LoadInst *> &getLoadInstList() { return loadInstList; }
+
+  std::list<llvm::Instruction *> &getReturnInstList() { return returnInstList; }
+
+  std::list<llvm::CallInst *> &getCallInstList() { return callInstList; }
+
+  std::set<llvm::Value *> &getPtrSet() { return ptrSet; }
+
+  bool hasFuncOrFilePtr() {
+    // check whether a function has a function_ptr or FILE parameter
+    for (Function::arg_iterator argi = Func->arg_begin(),
+                                arge = Func->arg_end();
+         argi != arge; ++argi) {
+      // params.push_back(argi->getType());
+      // function ptr, put func into insensitive_set, not sensitive
+      if (argi->getType()->isPointerTy()) {
+
+        if (argi->getType()->getContainedType(0)->isFunctionTy()) {
+          std::string Str;
+          raw_string_ostream OS(Str);
+          OS << *argi->getType();
+          errs() << "DEBUG LINE 700 FunctionPointerType : " << OS.str() << "\n";
+          return true;
         }
-    }
 
-    bool hasTrees(){
-        return treeFlag;
-    }
+        if (argi->getType()->getContainedType(0)->isStructTy()) {
+          std::string Str;
+          raw_string_ostream OS(Str);
+          OS << *argi->getType();
 
-    void setTreeFlag(bool flag){
-        this->treeFlag = flag;
-    }
+          // FILE*, bypass, no need to buildTypeTree
+          if ("%struct._IO_FILE*" == OS.str() ||
+              "%struct._IO_marker*" == OS.str()) {
 
-    bool isVisited(){
-        return visited;
-    }
+            errs() << "DEBUG LINE 711 struct._IO_marker*/struct._IO_FILE* \n";
+            return true;
+            // continue;
+          }
+        }
+      }
+    } // end for Function::arg_iterator argi...
 
-    void setVisited(bool flag){
-        this->visited = flag;
-    }
-
-
-    Function* getFunction(){
-        return Func;
-    }
-
-
-    void setEntry(InstructionWrapper* entry){
-        errs() << "Hello \n";
-        this->entryW = entry;
-    }
-
-    InstructionWrapper* getEntry(){
-        return entryW;
-    }
-
-    std::list<ArgumentWrapper*>& getArgWList(){
-        return argWList;
-    }
-
-    std::list<llvm::StoreInst*>& getStoreInstList(){
-        return storeInstList;
-    }
-
-    std::list<llvm::LoadInst*>& getLoadInstList(){
-        return loadInstList;
-    }
-
-    std::list<llvm::Instruction*>& getReturnInstList(){
-        return returnInstList;
-    }
-
-    std::list<llvm::CallInst*>& getCallInstList(){
-        return callInstList;
-    }
-
-    std::set<llvm::Value*>& getPtrSet(){
-        return ptrSet;
-    }
-
-    bool hasFuncOrFilePtr(){
-        //check whether a function has a function_ptr or FILE parameter
-        for(Function::arg_iterator argi = Func->arg_begin(), arge = Func->arg_end(); argi != arge; ++argi) {
-            // params.push_back(argi->getType());
-            //function ptr, put func into insensitive_set, not sensitive
-            if(argi->getType()->isPointerTy()){
-
-                if(argi->getType()->getContainedType(0)->isFunctionTy()){
-                    std::string Str;
-                    raw_string_ostream OS(Str);
-                    OS << *argi->getType();
-                    errs() << "DEBUG LINE 700 FunctionPointerType : " << OS.str() << "\n";
-                    return true;
-                }
-
-                if(argi->getType()->getContainedType(0)->isStructTy()){
-                    std::string Str;
-                    raw_string_ostream OS(Str);
-                    OS << *argi->getType();
-
-                    //FILE*, bypass, no need to buildTypeTree
-                    if("%struct._IO_FILE*" == OS.str() || "%struct._IO_marker*" == OS.str()){
-
-                        errs() << "DEBUG LINE 711 struct._IO_marker*/struct._IO_FILE* \n";
-                        return true;
-                        //continue;
-                    }
-                }
-            }
-        }// end for Function::arg_iterator argi...
-
-        return false;
-    }
+    return false;
+  }
 };
-
 
 static std::map<const Function *, FunctionWrapper *> funcMap;
 
 static void constructFuncMap(Module &M) {
   for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-    Function *f = dyn_cast
-<Function>(F);
+    Function *f = dyn_cast<Function>(F);
     if (funcMap.find(f) == funcMap.end()) // if not in funcMap yet, insert
     {
       FunctionWrapper *fw = new FunctionWrapper(f);
@@ -298,6 +271,5 @@ static void constructFuncMap(Module &M) {
     }
   }
 }
-
 
 #endif // FUNCTIONWRAPPER_H

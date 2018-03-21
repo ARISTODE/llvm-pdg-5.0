@@ -49,4 +49,25 @@ public:
   virtual void print(llvm::raw_ostream &OS, const llvm::Module *M = 0) const;
 };
 
+namespace llvm
+{
+
+  template <> struct GraphTraits<DataDependencyGraph *>
+      : public GraphTraits<DepGraph*> {
+    static NodeRef getEntryNode(DataDependencyGraph *DG) {
+      return *(DG->DDG->begin_children());
+    }
+
+    static nodes_iterator nodes_begin(DataDependencyGraph *DG) {
+      return DG->DDG->begin_children();
+    }
+
+    static nodes_iterator nodes_end(DataDependencyGraph *DG) {
+      return DG->DDG->end_children();
+    }
+  };
+
+}
+
+
 #endif

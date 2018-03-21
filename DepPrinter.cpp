@@ -1,6 +1,5 @@
 // dependency graph is in functionwrapper.h
-#include "ControlDependencies.h"
-#include "DataDependencies.h"
+#include "ProgramDependencies.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
 
 
@@ -91,6 +90,25 @@ namespace llvm {
         }
     };
 
+    // data dependency graph
+
+    template <>
+    struct DOTGraphTraits<DataDependencyGraph *>
+        : public DOTGraphTraits<DepGraph *> {
+      DOTGraphTraits(bool isSimple = false)
+          : DOTGraphTraits<DepGraph *>(isSimple) {}
+
+      static std::string getGraphName(DataDependencyGraph *) {
+        return "Data dependency graph";
+      }
+
+      std::string getNodeLabel(DepGraphNode *Node,
+                               DataDependencyGraph *Graph) {
+        return DOTGraphTraits<DepGraph *>::getNodeLabel(Node, Graph->DDG);
+      }
+    };
+
+    // control dependency graph
     template <>
     struct DOTGraphTraits<ControlDependencyGraph *>
         : public DOTGraphTraits<DepGraph *> {
@@ -121,27 +139,84 @@ namespace llvm {
 
     } // namespace llvm
 
+    struct ControlDependencyViewer
+        : public DOTGraphTraitsViewer<ControlDependencyGraph, false> {
+      static char ID;
+      ControlDependencyViewer()
+          : DOTGraphTraitsViewer<ControlDependencyGraph, false>("cdgraph", ID) {
+      }
+    };
 
-struct ControlDependencyViewer
-                : public DOTGraphTraitsViewer<ControlDependencyGraph, false>{
-            static char ID;
-            ControlDependencyViewer() :
-                    DOTGraphTraitsViewer<ControlDependencyGraph, false>("cdgraph", ID) {} };
+    char ControlDependencyViewer::ID = 0;
+    static RegisterPass<ControlDependencyViewer>
+        CDGViewer("view-cdg", "View control dependency graph of function",
+                  false, false);
 
+    struct ControlDependencyPrinter
+        : public DOTGraphTraitsPrinter<ControlDependencyGraph, false> {
+      static char ID;
+      ControlDependencyPrinter()
+          : DOTGraphTraitsPrinter<ControlDependencyGraph, false>("cdgragh",
+                                                                 ID) {}
+    };
 
-char ControlDependencyViewer::ID = 0;
-static RegisterPass<ControlDependencyViewer> CDGViewer("view-cdg", "View control dependency graph of function", false, false);
+    char ControlDependencyPrinter::ID = 0;
+    static RegisterPass<ControlDependencyPrinter>
+        CDGPrinter("dot-cdg",
+                   "Print control dependency graph of function to 'dot' file",
+                   false, false);
 
-struct ControlDependencyPrinter
-                : public DOTGraphTraitsPrinter<ControlDependencyGraph, false>
-        {
-            static char ID;
-            ControlDependencyPrinter()
-                    : DOTGraphTraitsPrinter<ControlDependencyGraph, false>("cdgragh", ID) {}
-        };
+    // DataPrinter
+    struct DataDependencyViewer
+        : public DOTGraphTraitsViewer<DataDependencyGraph, false> {
+      static char ID;
+      DataDependencyViewer()
+          : DOTGraphTraitsViewer<DataDependencyGraph, false>("ddgraph", ID) {}
+    };
 
-char ControlDependencyPrinter::ID = 0;
-static RegisterPass<ControlDependencyPrinter> CDGPrinter("dot-cdg", "Print control dependency graph of function to 'dot' file", false, false);
+    char DataDependencyViewer::ID = 0;
+    static RegisterPass<DataDependencyViewer>
+        DdgViewer("view-ddg", "View data dependency graph of function", false,
+                  false);
 
+    struct DataDependencyPrinter
+        : public DOTGraphTraitsPrinter<DataDependencyGraph, false> {
+      static char ID;
+      DataDependencyPrinter()
+          : DOTGraphTraitsPrinter<DataDependencyGraph, false>("ddgragh", ID) {}
+    };
 
+    char DataDependencyPrinter::ID = 0;
+    static RegisterPass<DataDependencyPrinter>
+        DdGPrinter("dot-ddg",
+                   "Print data dependency graph of function to 'dot' file",
+                   false, false);
 
+    // Program Printer
+    struct ProgramDependencyViewer
+        : public DOTGraphTraitsViewer<ProgramDependencyGraph, false> {
+      static char ID;
+      ProgramDependencyViewer()
+          : DOTGraphTraitsViewer<ProgramDependencyGraph, false>("pdgraph", ID) {
+      }
+    };
+
+    char ProgramDependencyViewer::ID = 0;
+    static RegisterPass<ProgramDependencyViewer>
+        PdgViewer("view-pdg", "View program dependency graph of function",
+                  false, false);
+
+    struct ProgramDependencyPrinter
+        : public DOTGraphTraitsPrinter<ProgramDependencyGraph, false> {
+      static char ID;
+      ProgramDependencyPrinter()
+          : DOTGraphTraitsPrinter<ProgramDependencyGraph, false>("pdgragh",
+                                                                 ID) {}
+    };
+
+    char ProgramDependencyPrinter::ID = 0;
+    static RegisterPass<ProgramDependencyPrinter>
+        PDGPrinter("dot-pdg",
+                   "Print instruction-level program dependency graph of "
+                   "function to 'dot' file",
+                   false, false);
