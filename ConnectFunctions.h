@@ -3,11 +3,8 @@
 
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "FunctionWrapper.h"
 
 #include "ProgramDependencies.h"
-
-#include "DependencyGraph.h"
 #include "SystemDataDependencies.h"
 #include "SystemControlDependenceGraph.h"
 
@@ -26,6 +23,8 @@
 
 using namespace llvm;
 
+extern std::map<const Function *, FunctionWrapper *> funcMap;
+extern std::map<const CallInst *, CallWrapper *> callMap;
 
 int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy);
 

@@ -24,6 +24,9 @@
 #include <string.h>
 #include <time.h>
 
+extern std::map<const Function *, FunctionWrapper *> funcMap;
+extern std::map<const CallInst *, CallWrapper *> callMap;
+
 typedef DependencyGraph<InstructionWrapper> ProgramDepGraph;
 
 /*!
@@ -53,6 +56,7 @@ public:
                                    FunctionType *funcTy);
 
   void connectFunctionAndFormalTrees(Function *callee);
+
   int connectCallerAndCallee(InstructionWrapper *CInstW,
                              llvm::Function *callee);
   //    int connectCallerAndCallee(CallInst *CI, llvm::Function *callee);

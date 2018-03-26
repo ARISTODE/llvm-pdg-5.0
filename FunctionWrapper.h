@@ -160,8 +160,7 @@ public:
     }
 };
 
-static std::map<const CallInst *, CallWrapper *> callMap;
-
+  
 // FunctionWrapper
 class FunctionWrapper {
 
@@ -258,18 +257,5 @@ public:
     return false;
   }
 };
-
-static std::map<const Function *, FunctionWrapper *> funcMap;
-
-static void constructFuncMap(Module &M) {
-  for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-    Function *f = dyn_cast<Function>(F);
-    if (funcMap.find(f) == funcMap.end()) // if not in funcMap yet, insert
-    {
-      FunctionWrapper *fw = new FunctionWrapper(f);
-      funcMap[f] = fw;
-    }
-  }
-}
 
 #endif // FUNCTIONWRAPPER_H

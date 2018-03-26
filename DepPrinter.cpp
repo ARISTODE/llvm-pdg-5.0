@@ -137,6 +137,64 @@ namespace llvm {
       }
     };
 
+    template <>
+    struct DOTGraphTraits<ProgramDependencyGraph *>
+        : public DOTGraphTraits<DepGraph *> {
+      DOTGraphTraits(bool isSimple = false)
+          : DOTGraphTraits<DepGraph *>(isSimple) {}
+
+      static std::string getGraphName(ProgramDependencyGraph *) {
+        return "Program Dependency Graph";
+      }
+
+      std::string getNodeLabel(DepGraphNode *Node,
+                               ProgramDependencyGraph *Graph) {
+        return DOTGraphTraits<DepGraph *>::getNodeLabel(Node, Graph->PDG);
+      }
+
+      // return IW.getDependencyType() == DATA ?
+      //"style=dotted" : "";
+
+      // take care of the probable display error here
+      std::string
+      getEdgeAttributes(DepGraphNode *Node,
+                        DependencyLinkIterator<InstructionWrapper> &IW,
+                        ProgramDependencyGraph *PD) {
+        switch (IW.getDependencyType()) {
+        case CONTROL:
+          return "";
+        case DATA_GENERAL:
+          return "style=dotted";
+        case GLOBAL_VALUE:
+          return "style=dotted";
+        case PARAMETER:
+          return "style=dashed";
+        case DATA_DEF_USE: {
+          Instruction *pFromInst = Node->getData()->getInstruction();
+          return "style=dotted,label = \"{DEF_USE}\" ";
+        }
+        case DATA_RAW: {
+
+          Instruction *pInstruction = IW.getDependencyNode()->getInstruction();
+          // pTo Node must be a LoadInst
+          std::string ret_str;
+          if (isa<LoadInst>(pInstruction)) {
+            LoadInst *LI = dyn_cast<LoadInst>(pInstruction);
+            Value *valLI = LI->getPointerOperand();
+            ret_str =
+                "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
+          } else if (isa<CallInst>(pInstruction)) {
+            ret_str = "style=dotted,label = \"{RAW}\"";
+          } else
+            errs() << "incorrect instruction for DATA_RAW node!"
+                   << "\n";
+          return ret_str;
+        }
+        }          // end switch
+        return ""; // default ret statement
+      }            // end getEdgeAttr...
+    };
+
     } // namespace llvm
 
     struct ControlDependencyViewer
@@ -148,6 +206,7 @@ namespace llvm {
     };
 
     char ControlDependencyViewer::ID = 0;
+
     static RegisterPass<ControlDependencyViewer>
         CDGViewer("view-cdg", "View control dependency graph of function",
                   false, false);

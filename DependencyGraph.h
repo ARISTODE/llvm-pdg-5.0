@@ -508,50 +508,5 @@ struct GraphTraits<DepGraph *> : public GraphTraits<DepGraphNode *> {
 
 } // namespace llvm
 
-// namespace llvm
-// {
-//   template <> struct GraphTraits<DepGraphNode*>
-//   {
-//     typedef DepGraphNode NodeType;
-//     typedef NodeType::iterator  ChildIteratorType;
-
-//     static NodeType *getEntryNode(NodeType *N) {
-//       return N;
-//     }
-//     static inline ChildIteratorType child_begin(NodeType *N) {
-//       return N->begin();
-//     }
-//     static inline ChildIteratorType child_end(NodeType *N) {
-//       return N->end();
-//     }
-
-//     typedef DepGraphNode::iterator nodes_iterator;
-
-//     static nodes_iterator nodes_begin(DepGraphNode *N) {
-//       return N->begin();
-//     }
-
-//     static nodes_iterator nodes_end(DepGraphNode *N) {
-//       return N->end();
-//     }
-//   };
-
-//   template <> struct GraphTraits<DepGraph *>
-//     : public GraphTraits<DepGraphNode*> {
-//     static NodeType *getEntryNode(DepGraph *N) {
-//       return *(N->begin_children());
-//     }
-
-//     typedef DepGraph::const_nodes_iterator nodes_iterator;
-//     static nodes_iterator nodes_begin(DepGraph *N) {
-//       return N->begin_children();
-//     }
-
-//     static nodes_iterator nodes_end(DepGraph *N) {
-//       return N->end_children();
-//     }
-//   };
-
-// }
 
 #endif // DEPENDENCYGRAPH_H_

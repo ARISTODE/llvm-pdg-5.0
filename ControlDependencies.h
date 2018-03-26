@@ -19,6 +19,7 @@
 
 typedef DependencyGraph<InstructionWrapper> ControlDepGraph;
 
+extern std::map<const Function *, FunctionWrapper *> funcMap;
 /*!
  * Control Dependency Graph
  */

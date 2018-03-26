@@ -187,16 +187,12 @@ void buildFormalTree(Argument *arg, TreeType treeTy){
 
 //build formal trees for each function
 void buildFormalParameterTrees(Function* callee){
-
     // sequentially set up parameter trees for the each argument
-    std::list<ArgumentWrapper*>::iterator argI =
-            funcMap[callee]->getArgWList().begin();
-    std::list<ArgumentWrapper*>::iterator argE =
-            funcMap[callee]->getArgWList().end();
+    std::list<ArgumentWrapper*>::iterator argI = funcMap[callee]->getArgWList().begin();
+    std::list<ArgumentWrapper*>::iterator argE = funcMap[callee]->getArgWList().end();
 
     errs() << "Function: " << callee->getName() << " " << *callee->getFunctionType() << "\n";
-
-    int i ;
+    
     for(; argI != argE; ++argI){
 
         buildFormalTree((*argI)->getArg(), FORMAL_IN_TREE);
@@ -217,14 +213,18 @@ void buildActualParameterTrees(CallInst *CI){
 
     Function *callee = CI->getCalledFunction();
 
+    errs() << "Call Map Size " << callMap.size() << "\n";
+
     list<ArgumentWrapper*>::iterator
             argI = callMap[CI]->getArgWList().begin(),
             argE = callMap[CI]->getArgWList().end();
+    
 
     list<ArgumentWrapper*>::iterator
             argFI = funcMap[callee]->getArgWList().begin(),
             argFE = funcMap[callee]->getArgWList().end();
 
+    errs() << callee->getName() << "\n";
     //  errs() << "argFI FORMAL_IN_TREE size " << (*argFI)->getTree(FORMAL_IN_TREE).size() << "\n";
 
     //copy FormalInTree in callee to ActualIn/OutTree in callMap

@@ -33,12 +33,12 @@ void ControlDependencyGraph::computeDependencies(llvm::Function &F,
          << " Function: " << F.getName().str() << '\n';
 
   // FunctionWrapper::funcMap[&F]->setEntry(root);
-  FunctionWrapper *fw = new FunctionWrapper(&F);
-  funcMap[&F] = fw; 
+ FunctionWrapper *fw = new FunctionWrapper(&F);
+ funcMap[&F] = fw; 
 
   //errs() << fw.
   //funcMap[&F]->setEntry(root);
-  fw->setEntry(root);
+  funcMap[&F]->setEntry(root);
 
   // may have changed to DomTreeNodeBase
   DomTreeNodeBase<BasicBlock>* node = PDT->getNode(&F.getEntryBlock());
