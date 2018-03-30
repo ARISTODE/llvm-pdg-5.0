@@ -4,13 +4,16 @@ using namespace llvm;
 
 char DataDependencyGraph::ID = 0;
 
+
 bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
   errs() << "++++++++++++++++++++++++++++++ DataDependency::runOnFunction "
             "+++++++++++++++++++++++++++++"
          << '\n';
   errs() << "Function name:" << F.getName().str() << '\n';
 
-constructInstMap(F);
+  //if (instMap.size() == 0) {
+  constructInstMap(F);
+  //}
   //    FlowDependenceAnalysis &MDA = getAnalysis<FlowDependenceAnalysis>();
   //    errs() << "After getAnalysis<FlowDependenceAnalysis>()" << '\n';
 

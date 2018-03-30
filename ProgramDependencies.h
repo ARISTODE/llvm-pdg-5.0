@@ -5,6 +5,7 @@
 #define SENSITIVE 256
 #define PDG_CONSTRUCTION 0
 
+#include "AllPasses.h"
 #include "llvm/Pass.h"
 #include "ControlDependencies.h"
 #include "DataDependencies.h"

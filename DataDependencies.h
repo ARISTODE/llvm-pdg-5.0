@@ -13,6 +13,12 @@
 #include "llvm/Support/raw_ostream.h"
 
 //#include "llvm/Analysis/AliasAnalysis.h"
+extern std::set<InstructionWrapper *> instnodes;
+extern std::set<InstructionWrapper *> instnodes;
+extern std::set<InstructionWrapper *> globalList;
+extern std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
+extern std::map<const llvm::Function *, std::set<InstructionWrapper *>>
+    funcInstWList;
 
 static llvm::ModRefInfo GetLocation(const llvm::Instruction *Inst,
                                     llvm::MemoryLocation &Loc,

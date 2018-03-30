@@ -175,20 +175,20 @@ namespace llvm {
         }
         case DATA_RAW: {
 
-          Instruction *pInstruction = IW.getDependencyNode()->getInstruction();
-          // pTo Node must be a LoadInst
-          std::string ret_str;
-          if (isa<LoadInst>(pInstruction)) {
-            LoadInst *LI = dyn_cast<LoadInst>(pInstruction);
-            Value *valLI = LI->getPointerOperand();
-            ret_str =
-                "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
-          } else if (isa<CallInst>(pInstruction)) {
-            ret_str = "style=dotted,label = \"{RAW}\"";
-          } else
-            errs() << "incorrect instruction for DATA_RAW node!"
-                   << "\n";
-          return ret_str;
+        //   Instruction *pInstruction = IW.getDependencyNode()->getInstruction();
+        //   // pTo Node must be a LoadInst
+        //   std::string ret_str;
+        //   if (isa<LoadInst>(pInstruction)) {
+        //     LoadInst *LI = dyn_cast<LoadInst>(pInstruction);
+        //     Value *valLI = LI->getPointerOperand();
+        //     ret_str =
+        //         "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
+        //   } else if (isa<CallInst>(pInstruction)) {
+        //     ret_str = "style=dotted,label = \"{RAW}\"";
+        //   } else
+        //     errs() << "incorrect instruction for DATA_RAW node!"
+        //            << "\n";
+        //   return ret_str;
         }
         }          // end switch
         return ""; // default ret statement

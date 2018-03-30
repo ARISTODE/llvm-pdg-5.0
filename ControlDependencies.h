@@ -20,6 +20,11 @@
 typedef DependencyGraph<InstructionWrapper> ControlDepGraph;
 
 extern std::map<const Function *, FunctionWrapper *> funcMap;
+extern std::set<InstructionWrapper *> instnodes;
+extern std::set<InstructionWrapper *> globalList;
+extern std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
+extern std::map<const llvm::Function *, std::set<InstructionWrapper *>>
+    funcInstWList;
 /*!
  * Control Dependency Graph
  */

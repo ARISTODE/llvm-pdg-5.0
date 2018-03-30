@@ -3,7 +3,8 @@
 
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
-#include "llvm/IR/InstIterator.h" #include "llvm/IR/Module.h"
+#include "llvm/IR/InstIterator.h" 
+#include "llvm/IR/Module.h"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -176,42 +177,68 @@ public:
   void setAccess(const bool _access) { access = _access; }
 };
 
-static std::set<InstructionWrapper *> instnodes;
-static std::set<InstructionWrapper *> globalList;
-static std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
-static std::map<const llvm::Function *, std::set<InstructionWrapper *>>
+extern std::set<InstructionWrapper *> instnodes;
+extern std::set<InstructionWrapper *> globalList;
+extern std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
+extern std::map<const llvm::Function *, std::set<InstructionWrapper *>>
     funcInstWList;
 
-// std::set<InstructionWrapper *> InstructionWrapper::nodes;
 static void constructInstMap(llvm::Function &F) {
+
   for (llvm::inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I) {
 
+    // llvm::errs() << "Current InstMap Size: " << instMap.size() << "\n";
+    llvm::errs() << "Current InstNode Size: " << instnodes.size() << "\n";
+    llvm::errs() << "Current funcWList Size: " << funcInstWList.size() << "\n";
     // temp testing, remove soon later...
     //	llvm::errs() << &*I << " " << *I << "\n";
-
     // if not in instMap yet, insert
     if (instMap.find(&*I) == instMap.end()) {
       InstructionWrapper *iw = new InstructionWrapper(&*I, &F, INST);
       instnodes.insert(iw);
+      // instMap is used to store instruction that have seen
       instMap[&*I] = iw;
-
-      // added in funcInstWList
+      // added in funcInstWList, indicate which instruction belongs to which
+      // function
       funcInstWList[&F].insert(iw);
     }
   }
 }
+// static std::set<InstructionWrapper *> instnodes;
+// static std::set<InstructionWrapper *> globalList;
+// static std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
+// static std::map<const llvm::Function *, std::set<InstructionWrapper *>>
+//     funcInstWList;
 
-static void releaseMemory() {
-  std::set<InstructionWrapper *>::iterator it;
-  for (it = instnodes.begin(); it != instnodes.end();) {
-    instnodes.erase(it++);
-  }
-  instnodes.clear();
-  instMap.clear();
-  funcInstWList.clear();
-}
+// std::set<InstructionWrapper *> InstructionWrapper::nodes;
+// static void constructInstMap(llvm::Function &F) {
+//   for (llvm::inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I)
+//   {
 
+//     // temp testing, remove soon later...
+//     //	llvm::errs() << &*I << " " << *I << "\n";
 
+//     // if not in instMap yet, insert
+//     if (instMap.find(&*I) == instMap.end()) {
+//       InstructionWrapper *iw = new InstructionWrapper(&*I, &F, INST);
+//       instnodes.insert(iw);
+//       instMap[&*I] = iw;
+
+//       // added in funcInstWList
+//       funcInstWList[&F].insert(iw);
+//     }
+//   }
+// }
+
+// static void releaseMemory() {
+//   std::set<InstructionWrapper *>::iterator it;
+//   for (it = instnodes.begin(); it != instnodes.end();) {
+//     instnodes.erase(it++);
+//   }
+//   instnodes.clear();
+//   instMap.clear();
+//   funcInstWList.clear();
+// }
 
 template <class NodeT> class DependencyLinkIterator;
 
@@ -248,8 +275,10 @@ public:
     DependencyLink link = DependencyLink(pNode, type);
     // Avoid double links.
     if (std::find(mDependencies.begin(), mDependencies.end(), link) ==
-        mDependencies.end())
+        mDependencies.end()) {
+      llvm::errs() << "Adding Dependencies ... " << type << "\n";
       mDependencies.push_back(link);
+    }
   }
 
   const NodeT *getData() const { return mpData; }
@@ -260,8 +289,11 @@ public:
     if (pNode == nullptr)
       return false;
 
+    llvm::errs() << "Dependency List Size: " << getDependencyList().size()
+                 << "\n";
     for (typename DependencyLinkList::const_iterator it = mDependencies.begin();
          it != mDependencies.end(); ++it) {
+      llvm::errs() << "Debugging dependencyLink: " << it->first << "\n";
       if (it->first == pNode)
         return true;
     }
@@ -350,6 +382,8 @@ public:
 
   DependencyNode<NodeT> *getRootNode() const { return RootNode; }
 
+  std::vector<DependencyNode<NodeT> *> getNodeSet() { return mNodes; }
+
   DependencyNode<NodeT> *getNodeByData(const NodeT *pData) {
     typename DataToNodeMap::iterator it = mDataToNode.find(pData);
     if (it == mDataToNode.end()) {
@@ -363,13 +397,13 @@ public:
     return it->second;
   }
 
-  const DependencyNode<NodeT> *getNodeByData(const NodeT *pData) const {
-    typename DataToNodeMap::const_iterator it = mDataToNode.find(pData);
-    if (it == mDataToNode.end()) {
-      return 0;
-    }
-    return it->second;
-  }
+  // const DependencyNode<NodeT> *getNodeByData(const NodeT *pData) const {
+  //   typename DataToNodeMap::const_iterator it = mDataToNode.find(pData);
+  //   if (it == mDataToNode.end()) {
+  //     return 0;
+  //   }
+  //   return it->second;
+  // }
 
   void addDependency(const NodeT *pDependent, const NodeT *pDepency, int type) {
     DependencyNode<NodeT> *pFrom = getNodeByData(pDependent);
@@ -377,16 +411,15 @@ public:
     pFrom->addDependencyTo(pTo, type);
   }
 
-  bool depends(const NodeT *pNode1, const NodeT *pNode2) const {
-    const DependencyNode<NodeT> *pFrom = getNodeByData(pNode1);
-    const DependencyNode<NodeT> *pTo = getNodeByData(pNode2);
+  bool depends(const NodeT *pNode1, const NodeT *pNode2) {
+    DependencyNode<NodeT> *pFrom = getNodeByData(pNode1);
+    DependencyNode<NodeT> *pTo = getNodeByData(pNode2);
 
     //      if(pFrom == nullptr)
     //	llvm::errs() << "pFrom == nullptr!\n";
-
-    if (pFrom != nullptr && pTo != nullptr)
+    if (pFrom != nullptr && pTo != nullptr) {
       return pFrom->dependsFrom(pTo);
-    else
+    } else
       return false;
   }
 
@@ -507,6 +540,5 @@ struct GraphTraits<DepGraph *> : public GraphTraits<DepGraphNode *> {
 };
 
 } // namespace llvm
-
 
 #endif // DEPENDENCYGRAPH_H_

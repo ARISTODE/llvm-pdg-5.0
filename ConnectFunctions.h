@@ -25,6 +25,11 @@ using namespace llvm;
 
 extern std::map<const Function *, FunctionWrapper *> funcMap;
 extern std::map<const CallInst *, CallWrapper *> callMap;
+extern std::set<InstructionWrapper *> instnodes;
+extern std::set<InstructionWrapper *> globalList;
+extern std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
+extern std::map<const llvm::Function *, std::set<InstructionWrapper *>>
+    funcInstWList;
 
 int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy);
 

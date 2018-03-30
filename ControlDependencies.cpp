@@ -2,6 +2,7 @@
 
 using namespace llvm;
 
+
 int ControlDependencyGraph::getDependenceType(const BasicBlock *A,
                                               const BasicBlock *B) const {
   assert(A && B);
@@ -33,8 +34,8 @@ void ControlDependencyGraph::computeDependencies(llvm::Function &F,
          << " Function: " << F.getName().str() << '\n';
 
   // FunctionWrapper::funcMap[&F]->setEntry(root);
- FunctionWrapper *fw = new FunctionWrapper(&F);
- funcMap[&F] = fw; 
+ //FunctionWrapper *fw = new FunctionWrapper(&F);
+ //funcMap[&F] = fw; 
 
   //errs() << fw.
   //funcMap[&F]->setEntry(root);
@@ -160,7 +161,9 @@ void ControlDependencyGraph::addDependency(llvm::BasicBlock *from,
 }
 
 bool ControlDependencyGraph::runOnFunction(Function &F) {
-  constructInstMap(F);
+  //if (instMap.size() == 0) {
+    constructInstMap(F);
+  //}
   PDT = &getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
   computeDependencies(F,PDT);
   return false;
