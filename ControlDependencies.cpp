@@ -24,26 +24,24 @@ int ControlDependencyGraph::getDependenceType(const BasicBlock *A,
 
 void ControlDependencyGraph::computeDependencies(llvm::Function &F,
                                                  llvm::PostDominatorTree *PDT) {
+  errs() << "++++++++++++++++++++++++++++++ ControlDependency::runOnFunction "
+            "+++++++++++++++++++++++++++++"
+         << '\n';
   /// Zhiyuan: explicitly construct the dummy ENTRY NODE:
+  if(funcMap[&F]->getEntry() != NULL) {
+      return;
+  }
   root = new InstructionWrapper(&F, ENTRY);
   instnodes.insert(root);
   funcInstWList[&F].insert(root);
 
-  errs() << " CDG.cpp after insert nodes.size "
-         << instnodes.size() << '\n'
+  errs() << " CDG.cpp after insert nodes.size " << instnodes.size() << '\n'
          << " Function: " << F.getName().str() << '\n';
 
-  // FunctionWrapper::funcMap[&F]->setEntry(root);
- //FunctionWrapper *fw = new FunctionWrapper(&F);
- //funcMap[&F] = fw; 
-
-  //errs() << fw.
-  //funcMap[&F]->setEntry(root);
   funcMap[&F]->setEntry(root);
 
   // may have changed to DomTreeNodeBase
-  DomTreeNodeBase<BasicBlock>* node = PDT->getNode(&F.getEntryBlock());
-
+  DomTreeNodeBase<BasicBlock> *node = PDT->getNode(&F.getEntryBlock());
 
   while (node && node->getBlock()) {
     // Walking the path backward and adding dependencies.
@@ -108,6 +106,8 @@ void ControlDependencyGraph::computeDependencies(llvm::Function &F,
       }
     }
   }
+  llvm::errs() << "Finish Control Depen Analysis"
+               << "\n";
 }
 
 void ControlDependencyGraph::addDependency(InstructionWrapper *from,
@@ -161,23 +161,22 @@ void ControlDependencyGraph::addDependency(llvm::BasicBlock *from,
 }
 
 bool ControlDependencyGraph::runOnFunction(Function &F) {
-  //if (instMap.size() == 0) {
-    constructInstMap(F);
+  // if (instMap.size() == 0) {
+  constructInstMap(F);
   //}
   PDT = &getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
-  computeDependencies(F,PDT);
+  computeDependencies(F, PDT);
   return false;
 }
 
 void ControlDependencyGraph::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
-  //AU.addRequired<DominatorTreeWrapperPass>();
+  // AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
 }
 
-void ControlDependencyGraph::print(raw_ostream &OS, const Module*) const
-{
-  const char* passname = getPassName().data();
+void ControlDependencyGraph::print(raw_ostream &OS, const Module *) const {
+  const char *passname = getPassName().data();
   CDG->print(OS, passname);
 }
 

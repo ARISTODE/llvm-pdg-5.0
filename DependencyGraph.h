@@ -188,8 +188,6 @@ static void constructInstMap(llvm::Function &F) {
   for (llvm::inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I) {
 
     // llvm::errs() << "Current InstMap Size: " << instMap.size() << "\n";
-    llvm::errs() << "Current InstNode Size: " << instnodes.size() << "\n";
-    llvm::errs() << "Current funcWList Size: " << funcInstWList.size() << "\n";
     // temp testing, remove soon later...
     //	llvm::errs() << &*I << " " << *I << "\n";
     // if not in instMap yet, insert
@@ -204,41 +202,6 @@ static void constructInstMap(llvm::Function &F) {
     }
   }
 }
-// static std::set<InstructionWrapper *> instnodes;
-// static std::set<InstructionWrapper *> globalList;
-// static std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
-// static std::map<const llvm::Function *, std::set<InstructionWrapper *>>
-//     funcInstWList;
-
-// std::set<InstructionWrapper *> InstructionWrapper::nodes;
-// static void constructInstMap(llvm::Function &F) {
-//   for (llvm::inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I)
-//   {
-
-//     // temp testing, remove soon later...
-//     //	llvm::errs() << &*I << " " << *I << "\n";
-
-//     // if not in instMap yet, insert
-//     if (instMap.find(&*I) == instMap.end()) {
-//       InstructionWrapper *iw = new InstructionWrapper(&*I, &F, INST);
-//       instnodes.insert(iw);
-//       instMap[&*I] = iw;
-
-//       // added in funcInstWList
-//       funcInstWList[&F].insert(iw);
-//     }
-//   }
-// }
-
-// static void releaseMemory() {
-//   std::set<InstructionWrapper *>::iterator it;
-//   for (it = instnodes.begin(); it != instnodes.end();) {
-//     instnodes.erase(it++);
-//   }
-//   instnodes.clear();
-//   instMap.clear();
-//   funcInstWList.clear();
-// }
 
 template <class NodeT> class DependencyLinkIterator;
 
@@ -276,7 +239,6 @@ public:
     // Avoid double links.
     if (std::find(mDependencies.begin(), mDependencies.end(), link) ==
         mDependencies.end()) {
-      llvm::errs() << "Adding Dependencies ... " << type << "\n";
       mDependencies.push_back(link);
     }
   }
@@ -289,11 +251,8 @@ public:
     if (pNode == nullptr)
       return false;
 
-    llvm::errs() << "Dependency List Size: " << getDependencyList().size()
-                 << "\n";
     for (typename DependencyLinkList::const_iterator it = mDependencies.begin();
          it != mDependencies.end(); ++it) {
-      llvm::errs() << "Debugging dependencyLink: " << it->first << "\n";
       if (it->first == pNode)
         return true;
     }

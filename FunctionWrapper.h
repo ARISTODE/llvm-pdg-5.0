@@ -202,7 +202,7 @@ public:
   Function *getFunction() { return Func; }
 
   void setEntry(InstructionWrapper *entry) {
-    errs() << "Hello \n";
+    //errs() << "Hello \n";
     this->entryW = entry;
   }
 

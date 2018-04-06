@@ -175,20 +175,20 @@ namespace llvm {
         }
         case DATA_RAW: {
 
-        //   Instruction *pInstruction = IW.getDependencyNode()->getInstruction();
-        //   // pTo Node must be a LoadInst
-        //   std::string ret_str;
-        //   if (isa<LoadInst>(pInstruction)) {
-        //     LoadInst *LI = dyn_cast<LoadInst>(pInstruction);
-        //     Value *valLI = LI->getPointerOperand();
-        //     ret_str =
-        //         "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
-        //   } else if (isa<CallInst>(pInstruction)) {
-        //     ret_str = "style=dotted,label = \"{RAW}\"";
-        //   } else
-        //     errs() << "incorrect instruction for DATA_RAW node!"
-        //            << "\n";
-        //   return ret_str;
+          Instruction *pInstruction = IW.getDependencyNode()->getInstruction();
+          // pTo Node must be a LoadInst
+          std::string ret_str;
+          if (isa<LoadInst>(pInstruction)) {
+            LoadInst *LI = dyn_cast<LoadInst>(pInstruction);
+            Value *valLI = LI->getPointerOperand();
+            ret_str =
+                "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
+          } else if (isa<CallInst>(pInstruction)) {
+            ret_str = "style=dotted,label = \"{RAW}\"";
+          } else
+            errs() << "incorrect instruction for DATA_RAW node!"
+                   << "\n";
+          return ret_str;
         }
         }          // end switch
         return ""; // default ret statement
@@ -252,18 +252,18 @@ namespace llvm {
                    false, false);
 
     // Program Printer
-    struct ProgramDependencyViewer
-        : public DOTGraphTraitsViewer<ProgramDependencyGraph, false> {
-      static char ID;
-      ProgramDependencyViewer()
-          : DOTGraphTraitsViewer<ProgramDependencyGraph, false>("pdgraph", ID) {
-      }
-    };
+    // struct ProgramDependencyViewer
+    //     : public DOTGraphTraitsViewer<ProgramDependencyGraph, false> {
+    //   static char ID;
+    //   ProgramDependencyViewer()
+    //       : DOTGraphTraitsViewer<ProgramDependencyGraph, false>("pdgraph", ID) {
+    //   }
+    // };
 
-    char ProgramDependencyViewer::ID = 0;
-    static RegisterPass<ProgramDependencyViewer>
-        PdgViewer("view-pdg", "View program dependency graph of function",
-                  false, false);
+    // char ProgramDependencyViewer::ID = 0;
+    // static RegisterPass<ProgramDependencyViewer>
+    //     PdgViewer("view-pdg", "View program dependency graph of function",
+    //               false, false);
 
     struct ProgramDependencyPrinter
         : public DOTGraphTraitsPrinter<ProgramDependencyGraph, false> {

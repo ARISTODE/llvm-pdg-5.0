@@ -95,8 +95,6 @@ void ProgramDependencyGraph::connectAllPossibleFunctions(
       InstructionWrapper *formal_outW =
           *(*argI)->getTree(FORMAL_OUT_TREE).begin();
 
-      errs() << "PDG add dependencies ... "
-             << "\n";
       // connect Function's EntryNode with formal in/out tree roots
       PDG->addDependency(funcMap[(*FI).first]->getEntry(),
                          *instnodes.find(formal_inW), PARAMETER);
@@ -421,7 +419,7 @@ void ProgramDependencyGraph::connectFunctionAndFormalTrees(
 
 bool ProgramDependencyGraph::runOnModule(Module &M) {
 
-  // Global_AA = getAnalysis<AliasAnalysis>().getAAResults();
+  //Global_AA = getAnalysis<AliasAnalysis>().getAAResults();
 
   errs() << "ProgramDependencyGraph::runOnModule" << '\n';
 
@@ -458,8 +456,12 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
   int uncolored_funcs = 0;
 
   // process a module function by function
+  int m_counter = 0;
   for (Module::iterator FF = M.begin(), E = M.end(); FF != E; ++FF) {
+    errs() << "Module Size: " << M.size() << "\n";
+   
     Function *F = dyn_cast<Function>(FF);
+
     if ((*F).isDeclaration()) {
       errs() << (*F).getName() << " is defined outside!"
              << "\n";
@@ -472,6 +474,7 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
            << "% completed\n";
 
 
+    constructInstMap(*F);
     // find all Load/Store instructions for each F, insert to F's
     // storeInstList and loadInstList
     for (inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I) {
@@ -506,22 +509,18 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
     // print PtrSet only
     //      #if 0
 
-    constructInstMap(*F);
 
-    DataDependencyGraph &ddgGraph = getAnalysis<DataDependencyGraph>(*F);
-
+    errs() << "Module conuter: " << m_counter << "\n";
     ControlDependencyGraph &cdgGraph = getAnalysis<ControlDependencyGraph>(*F);
-
-    //cdgGraph.computeDependencies(*F, cdgGraph.PDT);
-
+    DataDependencyGraph &ddgGraph = getAnalysis<DataDependencyGraph>(*F);
+    errs() << "Module conuter: " << m_counter << "\n";
+    m_counter++;
     // set Entries for Function, set up links between dummy entry nodes and
     // their func*
-    errs() << "funcWList Size: " << funcInstWList[F].size() << "\n";
-    errs() << "instnodes Size: " << instnodes.size() << "\n";
 
     for (std::set<InstructionWrapper *>::iterator nodeIt =
              funcInstWList[&*F].begin();
-         nodeIt != funcInstWList[&*F].end(); ++nodeIt) {
+         nodeIt != funcInstWList[&*F].end(); nodeIt++) {
 
       InstructionWrapper *InstW = *nodeIt;
       if (InstW->getType() == ENTRY) {
@@ -635,6 +634,10 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
            nodeIt2 != funcInstWList[&*F].end(); ++nodeIt2) {
         InstructionWrapper *InstW2 = *nodeIt2;
 
+        if (InstW == InstW2) {
+          continue;
+        }
+
         // process all globals see whether dependency exists
         if (InstW2->getType() == INST &&
             isa<LoadInst>(InstW2->getInstruction())) {
@@ -667,10 +670,6 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
 
           if (nullptr != InstW2->getInstruction()) {
             if (cdgGraph.CDG->depends(InstW, InstW2)) {
-              errs() << "FFFIND iT!!!"
-                     << "\n";
-              errs() << "PDG add dependencies ..."
-                     << "\n";
               PDG->addDependency(InstW, InstW2, CONTROL);
             }
           }
@@ -679,8 +678,6 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
         if (InstW->getType() == ENTRY) {
           if (nullptr != InstW2->getInstruction() &&
               cdgGraph.CDG->depends(InstW, InstW2)) {
-            errs() << "PDG add dependencies ..."
-                   << "\n";
             PDG->addDependency(InstW, InstW2, CONTROL);
           }
         }
@@ -814,7 +811,7 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
     queue.pop_front();
 
     if (InstW->getValue() == nullptr) {
-      ;
+
     } else {
       coloredInstSet.insert(InstW);
     }

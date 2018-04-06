@@ -7,12 +7,14 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Pass.h"
+#include "FunctionWrapper.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/Support/raw_ostream.h"
 
 //#include "llvm/Analysis/AliasAnalysis.h"
+extern std::map<const Function *, FunctionWrapper *> funcMap;
 extern std::set<InstructionWrapper *> instnodes;
 extern std::set<InstructionWrapper *> instnodes;
 extern std::set<InstructionWrapper *> globalList;
