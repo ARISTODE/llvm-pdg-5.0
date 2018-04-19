@@ -13,7 +13,7 @@ class DataDependencyGraph;
 class ControlDependencyGraph;
 class ProgramDependencyGraph;
 class SystemDataDependencyGraph;
-//class FlowDependenceAnalysis;
+class FlowDependenceAnalysis;
 
 //static RegisterPass<FlowDependenceAnalysis> FDA("fda", "FlowDependenceAnalysis calling", false, false);
 
@@ -21,7 +21,7 @@ class SystemDataDependencyGraph;
 DataDependencyGraph *CreateDataDependencyGraphPass();
 ControlDependencyGraph *CreateControlDependencyGraphPass();
 ProgramDependencyGraph *CreateProgramDependencyGraphPass();
-//FlowDependenceAnalysis *CreateFlowDataDependenceAnalysisPass();
+FlowDependenceAnalysis *CreateFlowDataDependenceAnalysisPass();
 namespace llvm {
 
 class PassRegistry;
@@ -30,8 +30,7 @@ class PassRegistry;
 void initializeDataDependencyGraphPass(PassRegistry &Registry);
 void initializeControlDependencyGraphPass(PassRegistry &Registry);
 void initializeSystemDataDependencyGraphPass(PassRegistry &Registry);
-
-//void initializeFlowDependenceAnalysisPass(PassRegistry &Registry);
+void initializeFlowDependenceAnalysisPass(PassRegistry &Registry);
 
 
 //void initializeHelloPass(PassRegistry &Registry);

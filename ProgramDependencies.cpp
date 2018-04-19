@@ -37,7 +37,7 @@ static IRBuilder<> Builder();
 char ProgramDependencyGraph::ID = 0;
 // std::map<const llvm::BasicBlock *,BasicBlockWrapper *>
 // BasicBlockWrapper::bbMap;
-AliasAnalysis *ProgramDependencyGraph::Global_AA = nullptr;
+//AliasAnalysis *ProgramDependencyGraph::Global_AA = nullptr;
 
 // std::map<const llvm::Function *,FunctionWrapper *> FunctionWrapper::funcMap;
 // std::map<const llvm::CallInst *,CallWrapper * > CallWrapper::callMap;
@@ -419,7 +419,7 @@ void ProgramDependencyGraph::connectFunctionAndFormalTrees(
 
 bool ProgramDependencyGraph::runOnModule(Module &M) {
 
-  //Global_AA = getAnalysis<AliasAnalysis>().getAAResults();
+  //Global_AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
 
   errs() << "ProgramDependencyGraph::runOnModule" << '\n';
 
