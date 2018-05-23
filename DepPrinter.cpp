@@ -1,4 +1,4 @@
-// dependency graph is in functionwrapper.h
+// dependency graph is in functionwrapper.h!
 #include "ProgramDependencies.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
 
@@ -175,7 +175,7 @@ namespace llvm {
                 case GLOBAL_VALUE:
                     return "style=dotted";
                 case PARAMETER:
-                    return "style=dashed,label= \"{para}\" ";
+                    return "style=dashed";
                 case DATA_DEF_USE: {
                     Instruction *pFromInst = Node->getData()->getInstruction();
                     return "style=dotted,label = \"{DEF_USE}\" ";

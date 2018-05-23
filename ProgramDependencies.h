@@ -53,8 +53,8 @@ public:
 
   //    void drawParameterTree(llvm::Function* call_func, TreeType treeTy);
 
-  void connectAllPossibleFunctions(InstructionWrapper *CInstW,
-                                   FunctionType *funcTy);
+//  void connectAllPossibleFunctions(InstructionWrapper *CInstW,
+//                                   FunctionType *funcTy);
 
   void connectFunctionAndFormalTrees(Function *callee);
 

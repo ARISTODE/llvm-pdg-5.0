@@ -232,9 +232,11 @@ public:
 
   void addDependencyTo(DependencyNode<NodeT> *pNode, int type) {
     // Avoid self-loops.
-    //	if (pNode == this)
-    // return;
+    if (pNode == this)
+      return;
+
     DependencyLink link = DependencyLink(pNode, type);
+
     // Avoid double links.
     if (std::find(mDependencies.begin(), mDependencies.end(), link) ==
         mDependencies.end()) {
@@ -246,7 +248,6 @@ public:
   const DependencyLinkList &getDependencyList() const { return mDependencies; }
 
   bool dependsFrom(const DependencyNode<NodeT> *pNode) const {
-
     if (pNode == nullptr)
       return false;
 

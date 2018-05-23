@@ -17,9 +17,7 @@ enum TreeType{
     FORMAL_OUT_TREE
 };
 
-
 static int id = 0;
-
 
 class TypeWrapper{
 private:
@@ -70,7 +68,6 @@ public:
     //TreeType: 0-ACTUAL_IN 1-ACTUAL_OUT 2-FORMAL_IN 3-FORMAL_OUT
     tree<InstructionWrapper*>& getTree(TreeType treeTy){
         switch(treeTy){
-
             case FORMAL_IN_TREE:
                 return formalInTree;
             case FORMAL_OUT_TREE:
@@ -87,7 +84,6 @@ public:
     void copyTree(const tree<InstructionWrapper*>& srcTree, TreeType treeTy){
 
         if(srcTree.empty()){
-
             errs() << *arg->getParent() << " arg : " << *arg << " srcTree is empty!\n";
             exit(1);
         }
@@ -118,19 +114,21 @@ public:
 
         //    InstructionWrapper(Function *Func, Argument *arg, Type* field_type, int field_id, InstWrapperType type) ;
         for(;SI != SE && TI != TE; ++SI, ++TI){
-            InstructionWrapper * typeFieldW = new InstructionWrapper((*SI)->getFunction(), (*SI)->getArgument(),
-                                                                     (*SI)->getFieldType(), id++, instWTy);
+            InstructionWrapper *typeFieldW;
+            if (SI == srcTree.begin()) {
+                typeFieldW = new InstructionWrapper((*SI)->getFunction(), (*SI)->getArgument(),
+                                                    (*SI)->getFieldType(), id++, instWTy);
+            }
+            else {
+                typeFieldW = new InstructionWrapper((*SI)->getFunction(), (*SI)->getArgument(),
+                                                    (*SI)->getFieldType(), id++, PARAMETER_FIELD);
+            }
             *TI = typeFieldW;
             instnodes.insert(typeFieldW);
         }
 
     }//end copyTree
-
-
-
 };
-
-
 
 class CallWrapper{
 private:
