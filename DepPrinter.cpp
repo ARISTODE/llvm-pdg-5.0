@@ -66,6 +66,16 @@ namespace llvm {
                     return ("POINTER READ/WRITE : *" + OS.str());
                 }
 
+                case STRUCT_FIELD: {
+                    llvm::Instruction *inst = instW->getInstruction();
+                    llvm::AllocaInst *allocaInst = dyn_cast<AllocaInst>(inst);
+                    llvm::StringRef struct_name = allocaInst->getAllocatedType()->getStructName();
+                    std::string struct_string = struct_name.str();
+                    std::string field_pos = std::to_string(instW->getFieldId());
+                    std::string ret_string = struct_string + "-- field_pos: " + field_pos;
+                    return (ret_string);
+                }
+
                 default: {
                     break;
                 }
@@ -171,7 +181,7 @@ namespace llvm {
                 case CONTROL:
                     return "";
                 case DATA_GENERAL:
-                    return "style=dotted";
+                    return "style=dotted, label = \"{DATA_GENERAL}\"";
                 case GLOBAL_VALUE:
                     return "style=dotted";
                 case PARAMETER:
@@ -195,6 +205,9 @@ namespace llvm {
                         errs() << "incorrect instruction for DATA_RAW node!"
                                << "\n";
                     return ret_str;
+                }
+                case STRUCT_FIELDS: {
+                    return "style=dotted, label=\"{S_FIELD}\"";
                 }
                 default:
                     return "style=dotted,label=\"{UNDEFINED}\"";

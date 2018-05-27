@@ -3,9 +3,8 @@
 using namespace llvm;
 using namespace std;
 
-static void
-constructFuncMap(Module &M,
-                 std::map<const Function *, FunctionWrapper *> &funcMap) {
+static void constructFuncMap(Module &M,
+                             std::map<const Function *, FunctionWrapper *> &funcMap) {
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
         Function *f = dyn_cast<Function>(F);
         if (funcMap.find(f) == funcMap.end()) // if not in funcMap yet, insert
@@ -20,11 +19,43 @@ std::map<const Function *, FunctionWrapper *> funcMap;
 std::map<const CallInst *, CallWrapper *> callMap =
         std::map<const CallInst *, CallWrapper *>();
 
+static void constructStructMap(Module &M, Instruction* pInstruction,
+                               std::map<AllocaInst*, std::pair<StructType*, std::vector<Type*>>> &alloca_struct_map) {
+    AllocaInst* allocaInst = dyn_cast<AllocaInst>(pInstruction);
+    // constructing struct
+    vector<StructType*> global_struct_list = M.getIdentifiedStructTypes();
+    for (auto st : global_struct_list) {
+        if (allocaInst->getAllocatedType()->getStructName() == st->getName()) {
+            vector<Type *> fields;
+            std::pair<StructType*, std::vector<Type*>> struct_pair;
+
+            StructType::element_iterator SB = st->element_begin();
+            StructType::element_iterator SE = st->element_end();
+            while (SB != SE) {
+                // get the type for each field
+                auto type = *SB;
+                // add each field to vector
+                fields.push_back(type);
+                SB++;
+            }
+            // store the vector with corresponding in the map
+            //structMap[st] = fields;
+            struct_pair.first = st;
+            struct_pair.second = fields;
+            alloca_struct_map[allocaInst] = struct_pair;
+        }
+    }
+
+    errs() << "Construct struct map success !" << "\n";
+    errs() << "Struct Map size: " << alloca_struct_map.size() << "\n";
+};
+
 std::set<InstructionWrapper *> instnodes;
 std::set<InstructionWrapper *> globalList;
-std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
-std::map<const llvm::Function *, std::set<InstructionWrapper *>>
-        funcInstWList;
+std::map<const Instruction *, InstructionWrapper *> instMap;
+std::map<const Function *, std::set<InstructionWrapper *>> funcInstWList;
+std::map<AllocaInst*, std::pair<StructType*, std::vector<Type*>>> alloca_struct_map;
+std::map<AllocaInst*, int> seen_structs;
 
 static IRBuilder<> Builder();
 
@@ -396,8 +427,6 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
 
     constructFuncMap(M, funcMap);
 
-    errs() << "funcMap size = " << funcMap.size() << '\n';
-
     for (auto &func : funcMap) {
         errs() << func.first->getName() << "\n";
     }
@@ -440,6 +469,7 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
         errs() << "PDG " << 1.0 * funcs / M.getFunctionList().size() * 100
                << "% completed\n";
 
+
         constructInstMap(*F);
 
         // find all Load/Store instructions for each F, insert to F's
@@ -470,6 +500,13 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
             if (isa<CallInst>(pInstruction))
                 funcMap[&*F]->getCallInstList().push_back(
                         dyn_cast<CallInst>(pInstruction));
+            if (isa<AllocaInst>(pInstruction)) {
+                // find struct allocation
+                AllocaInst *alloinst = dyn_cast<AllocaInst>(pInstruction);
+                if (alloinst->getAllocatedType()->isStructTy()) {
+                   constructStructMap(M, pInstruction, alloca_struct_map);
+                }
+            }
         }
 
         // print PtrSet only
@@ -592,6 +629,7 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
                     continue;
                 }
 
+
                 // process all globals see whether dependency exists
                 if (InstW2->getType() == INST &&
                     isa<LoadInst>(InstW2->getInstruction())) {
@@ -611,15 +649,19 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
                     } // end searching globalList
                 }   // end procesing load for global
 
-                if (InstW->getType() == INST) {
+                if (InstW->getType() == INST || InstW->getType() == STRUCT_FIELD) {
                     if (ddgGraph.DDG->depends(InstW, InstW2)) {
                         // only StoreInst->LoadInst edge can be annotated
                         if (InstW2->getType() == INST &&
                             isa<StoreInst>(InstW->getInstruction()) &&
                             isa<LoadInst>(InstW2->getInstruction())) {
                             PDG->addDependency(InstW, InstW2, DATA_RAW);
-                        } else
-                            PDG->addDependency(InstW, InstW2, DATA_DEF_USE);
+                        }
+                        else {
+                            if (InstW->getInstruction() != InstW2->getInstruction()) {
+                                PDG->addDependency(InstW, InstW2, DATA_DEF_USE);
+                            }
+                        }
                     }
 
                     if (nullptr != InstW2->getInstruction()) {
@@ -628,6 +670,17 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
                         }
                     }
                 } // end if(InstW->getType()== INST)
+
+                if(InstW->getType() == STRUCT_FIELD) {
+                    if (InstW->getType() == STRUCT_FIELD && InstW2->getType() != STRUCT_FIELD) {
+                        if(InstW->getInstruction() == InstW2->getInstruction()) {
+                            // test alloca instruction is the same
+                            errs() << "Adding Instruction dependencies..." << "\n";
+                            PDG->addDependency(InstW, InstW2, STRUCT_FIELDS);
+                        }
+                    }
+
+                }
 
                 if (InstW->getType() == ENTRY) {
                     if (nullptr != InstW2->getInstruction() &&
@@ -640,6 +693,20 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
         }   // end the iteration for finding CallInst
 
     } // end for(Module...
+
+    // do it here because previous processing is for each function. And the struct field dependency is added
+    // to instnodes, which is not contained in functionWList.
+//    for (auto instW1 : instnodes) {
+//        for (auto instW2 : instnodes) {
+//            if (instW1->getType() == STRUCT_FIELD and instW2->getType() != STRUCT_FIELD) {
+//                if(instW1->getInstruction() == instW2->getInstruction()) {
+//                    // test alloca instruction is the same
+//                    errs() << "Adding Instruction dependencies..." << "\n";
+//                    PDG->addDependency(instW1, instW2, STRUCT_FIELDS);
+//                }
+//            }
+//        }
+//    }
 
     errs() << "\n\n PDG construction completed! ^_^\n\n";
     errs() << "funcs = " << funcs << "\n";
