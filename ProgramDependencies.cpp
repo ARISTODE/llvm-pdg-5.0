@@ -3,17 +3,6 @@
 using namespace llvm;
 using namespace std;
 
-static void constructFuncMap(Module &M,
-                             std::map<const Function *, FunctionWrapper *> &funcMap) {
-    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-        Function *f = dyn_cast<Function>(F);
-        if (funcMap.find(f) == funcMap.end()) // if not in funcMap yet, insert
-        {
-            FunctionWrapper *fw = new FunctionWrapper(f);
-            funcMap[f] = fw;
-        }
-    }
-}
 
 std::map<const Function *, FunctionWrapper *> funcMap;
 std::map<const CallInst *, CallWrapper *> callMap =

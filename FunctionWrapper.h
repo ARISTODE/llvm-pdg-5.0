@@ -178,15 +178,16 @@ private:
 public:
   FunctionWrapper(Function *Func) {
 
-    this->Func = Func;
+      this->Func = Func;
+      this->entryW = NULL;
     //  Function::ArgumentListType& callee_args = Func->getArgumentList();
-    for (Function::arg_iterator argIt = Func->arg_begin(),
-                                argE = Func->arg_end();
-         argIt != argE; ++argIt) {
+      for (Function::arg_iterator argIt = Func->arg_begin(),
+                   argE = Func->arg_end();
+           argIt != argE; ++argIt) {
 
-      ArgumentWrapper *argW = new ArgumentWrapper(&*argIt);
-      argWList.push_back(argW);
-    }
+          ArgumentWrapper *argW = new ArgumentWrapper(&*argIt);
+          argWList.push_back(argW);
+      }
   }
 
   bool hasTrees() { return treeFlag; }
@@ -255,5 +256,16 @@ public:
     return false;
   }
 };
+
+static void constructFuncMap(Module &M, std::map<const Function *, FunctionWrapper *> &funcMap) {
+    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
+        Function *f = dyn_cast<Function>(F);
+        if (funcMap.find(f) == funcMap.end()) // if not in funcMap yet, insert
+        {
+            FunctionWrapper *fw = new FunctionWrapper(f);
+            funcMap[f] = fw;
+        }
+    }
+}
 
 #endif // FUNCTIONWRAPPER_H
