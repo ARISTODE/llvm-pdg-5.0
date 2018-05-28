@@ -12,9 +12,8 @@ bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
          << '\n';
   errs() << "Function name:" << F.getName().str() << '\n';
 
-  if (instMap.empty() == false) {
-    constructInstMap(F);
-  }
+  constructInstMap(F);
+
   AliasAnalysis *AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   MemoryDependenceResults *MD =
           &getAnalysis<MemoryDependenceWrapperPass>().getMemDep();
@@ -90,6 +89,8 @@ bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
               getDependencyInFunction(F, pInstruction);
 
       for (int i = 0; i < flowdep_set.size(); i++) {
+        errs() << "Debuggin flowdep_set:" << "\n";
+        errs() << *flowdep_set[i] << "\n";
         DDG->addDependency(instMap[flowdep_set[i]], instMap[pInstruction],
                            DATA_RAW);
       }

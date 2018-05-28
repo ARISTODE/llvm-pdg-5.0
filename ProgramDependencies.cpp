@@ -640,17 +640,19 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
 
                 if (InstW->getType() == INST || InstW->getType() == STRUCT_FIELD) {
                     if (ddgGraph.DDG->depends(InstW, InstW2)) {
+                        PDG->addDependency(InstW, InstW2, ddgGraph.DDG->getDataType(InstW,InstW2));
                         // only StoreInst->LoadInst edge can be annotated
-                        if (InstW2->getType() == INST &&
-                            isa<StoreInst>(InstW->getInstruction()) &&
-                            isa<LoadInst>(InstW2->getInstruction())) {
-                            PDG->addDependency(InstW, InstW2, DATA_RAW);
-                        }
-                        else {
-                            if (InstW->getInstruction() != InstW2->getInstruction()) {
-                                PDG->addDependency(InstW, InstW2, DATA_DEF_USE);
-                            }
-                        }
+//                        if (InstW2->getType() == INST &&
+//                            isa<StoreInst>(InstW->getInstruction()) &&
+//                            isa<LoadInst>(InstW2->getInstruction())) {
+//
+//                            PDG->addDependency(InstW, InstW2, DATA_RAW);
+//                        }
+//                        else {
+//                            if (InstW->getInstruction() != InstW2->getInstruction()) {
+//                                PDG->addDependency(InstW, InstW2, DATA_DEF_USE);
+//                            }
+//                        }
                     }
 
                     if (nullptr != InstW2->getInstruction()) {
@@ -682,20 +684,6 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
         }   // end the iteration for finding CallInst
 
     } // end for(Module...
-
-    // do it here because previous processing is for each function. And the struct field dependency is added
-    // to instnodes, which is not contained in functionWList.
-//    for (auto instW1 : instnodes) {
-//        for (auto instW2 : instnodes) {
-//            if (instW1->getType() == STRUCT_FIELD and instW2->getType() != STRUCT_FIELD) {
-//                if(instW1->getInstruction() == instW2->getInstruction()) {
-//                    // test alloca instruction is the same
-//                    errs() << "Adding Instruction dependencies..." << "\n";
-//                    PDG->addDependency(instW1, instW2, STRUCT_FIELDS);
-//                }
-//            }
-//        }
-//    }
 
     errs() << "\n\n PDG construction completed! ^_^\n\n";
     errs() << "funcs = " << funcs << "\n";

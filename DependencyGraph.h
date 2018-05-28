@@ -277,6 +277,16 @@ public:
         return false;
     }
 
+    int getDataDependencyType(const DependencyNode<NodeT> *pNode) const {
+        for(typename DependencyLinkList::const_iterator it = mDependencies.begin();
+            it != mDependencies.end(); ++it) {
+            if (it->first == pNode) {
+                return it->second;
+            }
+        }
+        return DATA_GENERAL;
+    }
+
     int getControlType(const DependencyNode<NodeT> *pNode) const {
         for (typename DependencyLinkList::const_iterator it = mDependencies.begin();
              it != mDependencies.end(); ++it) {
@@ -404,6 +414,12 @@ public:
         const DependencyNode<NodeT> *pFrom = getNodeByData(pNode1);
         const DependencyNode<NodeT> *pTo = getNodeByData(pNode2);
         return pFrom->getControlType(pTo);
+    }
+
+    int getDataType(NodeT *pNode1, NodeT *pNode2) {
+        DependencyNode<NodeT> *pFrom = getNodeByData(pNode1);
+        DependencyNode<NodeT> *pTo = getNodeByData(pNode2);
+        return pFrom->getDataDependencyType(pTo);
     }
 
     nodes_iterator begin_children() { return nodes_iterator(mNodes.begin()); }

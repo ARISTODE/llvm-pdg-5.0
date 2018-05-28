@@ -19,10 +19,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98772562-9006-458f-9b00-e78ae48cc67c" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/ControlDependencies.cpp" afterPath="$PROJECT_DIR$/ControlDependencies.cpp" />
-      <change beforePath="$PROJECT_DIR$/FunctionWrapper.h" afterPath="$PROJECT_DIR$/FunctionWrapper.h" />
+      <change beforePath="$PROJECT_DIR$/DataDependencies.cpp" afterPath="$PROJECT_DIR$/DataDependencies.cpp" />
+      <change beforePath="$PROJECT_DIR$/DependencyGraph.h" afterPath="$PROJECT_DIR$/DependencyGraph.h" />
       <change beforePath="$PROJECT_DIR$/ProgramDependencies.cpp" afterPath="$PROJECT_DIR$/ProgramDependencies.cpp" />
+      <change beforePath="$PROJECT_DIR$/test/llvm_bc/cdgragh.main.dot" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/test/llvm_bc/pdgragh.main.dot" afterPath="$PROJECT_DIR$/test/llvm_bc/pdgragh.main.dot" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -34,14 +35,14 @@
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.4716981">
+    <splitter split-orientation="horizontal" split-proportion="0.5185984">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file leaf-file-name="ProgramDependencies.cpp" pinned="false" current-in-tab="false">
+          <file leaf-file-name="ProgramDependencies.cpp" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/ProgramDependencies.cpp">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="442">
-                  <caret line="415" column="0" lean-forward="false" selection-start-line="415" selection-start-column="0" selection-end-line="415" selection-end-column="0" />
+                <state relative-caret-position="208">
+                  <caret line="642" column="20" lean-forward="false" selection-start-line="642" selection-start-column="20" selection-end-line="642" selection-end-column="20" />
                   <folding>
                     <element signature="e#2290#4013#0" expanded="true" />
                     <element signature="e#5293#6424#0" expanded="false" />
@@ -62,7 +63,7 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="FunctionWrapper.h" pinned="false" current-in-tab="true">
+          <file leaf-file-name="FunctionWrapper.h" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/FunctionWrapper.h">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="546">
@@ -75,8 +76,8 @@
           <file leaf-file-name="DepPrinter.cpp" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/DepPrinter.cpp">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="964">
-                  <caret line="298" column="22" lean-forward="true" selection-start-line="298" selection-start-column="22" selection-end-line="298" selection-end-column="22" />
+                <state relative-caret-position="130">
+                  <caret line="152" column="8" lean-forward="false" selection-start-line="152" selection-start-column="8" selection-end-line="152" selection-end-column="8" />
                   <folding>
                     <element signature="e#157#159#0" expanded="true" />
                     <element signature="e#3396#3398#0" expanded="true" />
@@ -95,8 +96,8 @@
           <file leaf-file-name="ProgramDependencies.cpp" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/ProgramDependencies.cpp">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="702">
-                  <caret line="613" column="61" lean-forward="false" selection-start-line="613" selection-start-column="61" selection-end-line="613" selection-end-column="61" />
+                <state relative-caret-position="-156">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
                   <folding />
                 </state>
               </provider>
@@ -105,28 +106,38 @@
           <file leaf-file-name="DataDependencies.cpp" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/DataDependencies.cpp">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="364">
-                  <caret line="15" column="4" lean-forward="false" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
+                <state relative-caret-position="468">
+                  <caret line="88" column="28" lean-forward="true" selection-start-line="88" selection-start-column="28" selection-end-line="88" selection-end-column="28" />
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="ControlDependencies.cpp" pinned="false" current-in-tab="true">
+          <file leaf-file-name="DataDependencies.h" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/DataDependencies.h">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="791">
+                  <caret line="77" column="3" lean-forward="false" selection-start-line="77" selection-start-column="3" selection-end-line="77" selection-end-column="3" />
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="DependencyGraph.h" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/DependencyGraph.h">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="468">
+                  <caret line="421" column="22" lean-forward="false" selection-start-line="421" selection-start-column="22" selection-end-line="421" selection-end-column="22" />
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="ControlDependencies.cpp" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/ControlDependencies.cpp">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="572">
                   <caret line="35" column="3" lean-forward="false" selection-start-line="35" selection-start-column="3" selection-end-line="35" selection-end-column="3" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="ControlDependencies.h" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/ControlDependencies.h">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-286">
-                  <caret line="28" column="26" lean-forward="false" selection-start-line="28" selection-start-column="26" selection-end-line="28" selection-end-column="26" />
                   <folding />
                 </state>
               </provider>
@@ -144,12 +155,13 @@
       <list>
         <option value="$PROJECT_DIR$/ConnectFunctions.cpp" />
         <option value="$PROJECT_DIR$/ProgramDependencies.h" />
-        <option value="$PROJECT_DIR$/DependencyGraph.h" />
         <option value="$PROJECT_DIR$/DepPrinter.cpp" />
-        <option value="$PROJECT_DIR$/DataDependencies.cpp" />
-        <option value="$PROJECT_DIR$/ProgramDependencies.cpp" />
         <option value="$PROJECT_DIR$/FunctionWrapper.h" />
         <option value="$PROJECT_DIR$/ControlDependencies.cpp" />
+        <option value="$PROJECT_DIR$/DependencyGraph.h" />
+        <option value="$PROJECT_DIR$/DataDependencies.cpp" />
+        <option value="$PROJECT_DIR$/ProgramDependencies.cpp" />
+        <option value="$PROJECT_DIR$/DataDependencies.h" />
       </list>
     </option>
   </component>
@@ -159,8 +171,9 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
+  <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="65" />
+    <option name="x" value="-1855" />
     <option name="y" value="1076" />
     <option name="width" value="1855" />
     <option name="height" value="1084" />
@@ -239,15 +252,15 @@
       <workItem from="1526569877311" duration="1735000" />
       <workItem from="1526571713361" duration="1805000" />
       <workItem from="1526573539726" duration="1819000" />
-      <workItem from="1526579809359" duration="93916000" />
+      <workItem from="1526579809359" duration="99688000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="99275000" />
+    <option name="totallyTimeSpent" value="105047000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="65" y="1076" width="1855" height="1084" extended-state="6" />
+    <frame x="-1855" y="1076" width="1855" height="1084" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16226415" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -403,33 +416,11 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DependencyGraph.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="115">
-          <caret line="152" column="32" lean-forward="true" selection-start-line="152" selection-start-column="32" selection-end-line="152" selection-end-column="32" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ConnectFunctions.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-983">
           <caret line="62" column="22" lean-forward="true" selection-start-line="62" selection-start-column="22" selection-end-line="62" selection-end-column="22" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DepPrinter.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="964">
-          <caret line="298" column="22" lean-forward="true" selection-start-line="298" selection-start-column="22" selection-end-line="298" selection-end-column="22" />
-          <folding>
-            <element signature="e#157#159#0" expanded="true" />
-            <element signature="e#3396#3398#0" expanded="true" />
-            <element signature="e#3858#3860#0" expanded="true" />
-            <element signature="e#4443#4445#0" expanded="true" />
-            <element signature="e#5417#5419#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -449,22 +440,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DataDependencies.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="364">
-          <caret line="15" column="4" lean-forward="false" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ProgramDependencies.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="702">
-          <caret line="613" column="61" lean-forward="false" selection-start-line="613" selection-start-column="61" selection-end-line="613" selection-end-column="61" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/FunctionWrapper.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="546">
@@ -477,6 +452,52 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="572">
           <caret line="35" column="3" lean-forward="false" selection-start-line="35" selection-start-column="3" selection-end-line="35" selection-end-column="3" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DepPrinter.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="130">
+          <caret line="152" column="8" lean-forward="false" selection-start-line="152" selection-start-column="8" selection-end-line="152" selection-end-column="8" />
+          <folding>
+            <element signature="e#157#159#0" expanded="true" />
+            <element signature="e#3396#3398#0" expanded="true" />
+            <element signature="e#3858#3860#0" expanded="true" />
+            <element signature="e#4443#4445#0" expanded="true" />
+            <element signature="e#5417#5419#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ProgramDependencies.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-156">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DataDependencies.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="468">
+          <caret line="88" column="28" lean-forward="true" selection-start-line="88" selection-start-column="28" selection-end-line="88" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DependencyGraph.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="468">
+          <caret line="421" column="22" lean-forward="false" selection-start-line="421" selection-start-column="22" selection-end-line="421" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DataDependencies.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="791">
+          <caret line="77" column="3" lean-forward="false" selection-start-line="77" selection-start-column="3" selection-end-line="77" selection-end-column="3" />
           <folding />
         </state>
       </provider>
