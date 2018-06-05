@@ -1,10 +1,10 @@
 // dependency graph is in functionwrapper.h!
 #include "ProgramDependencies.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
+#include "llvm/Support/TypeName.h"
 
 
 namespace llvm {
-
     template <>
     struct DOTGraphTraits<DepGraphNode *> : public DefaultDOTGraphTraits {
         DOTGraphTraits (bool isSimple = false): DefaultDOTGraphTraits(isSimple) {}
@@ -70,9 +70,43 @@ namespace llvm {
                     llvm::Instruction *inst = instW->getInstruction();
                     llvm::AllocaInst *allocaInst = dyn_cast<AllocaInst>(inst);
                     llvm::StringRef struct_name = allocaInst->getAllocatedType()->getStructName();
+
                     std::string struct_string = struct_name.str();
-                    std::string field_pos = std::to_string(instW->getFieldId());
-                    std::string ret_string = struct_string + "-- field_pos: " + field_pos;
+
+                    std::vector<std::string> TYPE_NAMES = {
+                            "VoidTy",    ///<  0: type with no size
+                            "HalfTy",        ///<  1: 16-bit floating point type
+                            "FloatTy",       ///<  2: 32-bit floating point type
+                            "DoubleTy",      ///<  3: 64-bit floating point type
+                            "X86_FP80Ty",    ///<  4: 80-bit floating point type (X87)
+                            "FP128Ty",       ///<  5: 128-bit floating point type (112-bit mantissa)
+                            "PPC_FP128Ty",   ///<  6: 128-bit floating point type (two 64-bits, PowerPC)
+                            "LabelTy",       ///<  7: Labels
+                            "MetadataTy",    ///<  8: Metadata
+                            "X86_MMXTy",     ///<  9: MMX vectors (64 bits, X86 specific)
+                            "TokenTy",       ///< 10: Tokens
+
+                            // Derived types... see DerivedTypes.h file.
+                            // Make sure FirstDerivedTyID stays up to date!
+                            "IntegerTy",     ///< 11: Arbitrary bit width integers
+                            "FunctionTy",    ///< 12: Functions
+                            "StructTy",      ///< 13: Structures
+                            "ArrayTy",       ///< 14: Arrays
+                            "PointerTy",     ///< 15: Pointers
+                            "VectorTy"
+                    };
+                    llvm::Type *field_type = instW->getFieldType();
+                    std::string type_name = TYPE_NAMES.at(field_type->getTypeID());
+
+                    std::vector<std::string> fields_name = struct_fields_map[struct_string.substr(7)];
+                    std::string ret_string = "";
+                    if (fields_name.empty() == false) {
+                        std::string field_name =  fields_name.at(instW->getFieldId());
+                        ret_string = struct_string + " (" + type_name + ") : " + field_name ;
+                    } else {
+                        std::string field_pos = std::to_string(instW->getFieldId());
+                        ret_string = struct_string + " (" + type_name + ") : " + std::to_string(instW->getFieldId());
+                    }
                     return (ret_string);
                 }
 
@@ -81,7 +115,7 @@ namespace llvm {
                 }
             }
 
-            const Instruction *inst = Node->getData()->getInstruction();
+            llvm::Instruction *inst = Node->getData()->getInstruction();
 
             if (isSimple() && !inst->getName().empty()) {
                 return inst->getName().str();
@@ -271,21 +305,6 @@ static RegisterPass<DataDependencyPrinter>
         DdGPrinter("dot-ddg",
                    "Print data dependency graph of function to 'dot' file",
                    false, false);
-
-// Program Printer
-// struct ProgramDependencyViewer
-//     : public DOTGraphTraitsViewer<ProgramDependencyGraph, false> {
-//   static char ID;
-//   ProgramDependencyViewer()
-//       : DOTGraphTraitsViewer<ProgramDependencyGraph, false>("pdgraph",
-//       ID) {
-//   }
-// };
-
-// char ProgramDependencyViewer::ID = 0;
-// static RegisterPass<ProgramDependencyViewer>
-//     PdgViewer("view-pdg", "View program dependency graph of function",
-//               false, false);
 
 struct ProgramDependencyPrinter
         : public DOTGraphTraitsPrinter<ProgramDependencyGraph, false> {

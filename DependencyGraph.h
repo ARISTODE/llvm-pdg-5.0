@@ -6,6 +6,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/DerivedTypes.h"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -200,6 +201,7 @@ extern std::map<const llvm::Instruction *, InstructionWrapper *> instMap;
 extern std::map<const llvm::Function *, std::set<InstructionWrapper *>>
         funcInstWList;
 extern std::map<AllocaInst*, std::pair<StructType*, std::vector<Type*>>> alloca_struct_map;
+extern std::map<std::string, std::vector<std::string>> struct_fields_map;
 extern std::map<AllocaInst*, int> seen_structs;
 
 static void constructInstMap(llvm::Function &F) {

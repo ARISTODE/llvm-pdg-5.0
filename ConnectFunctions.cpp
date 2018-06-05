@@ -41,7 +41,6 @@ int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy){
         else{
             if(pArgW->getArg() == arg){
                 //TODO: find a better way to do optimization, this way sucks, check historic record of recursive types to avoid redundant processing tree node
-
 //                if(recursive_types.find(tyW->getType()) != recursive_types.end() ){
 //                    errs() << *tyW->getType() << " is a recursive type found in historic record!\n ";
 //                    return RECURSIVE_TYPE;
@@ -57,7 +56,7 @@ int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy){
 
                 //if ty is a pointer, its containedType [ty->getContainedType(0)] means the type ty points to
                 for(unsigned int i = 0; i < tyW->getType()->getContainedType(0)->getNumContainedTypes(); i++){
-                    tyW->getType()->getContainedType(0)->getContainedType(i)->print(errs());
+                    //tyW->getType()->getContainedType(0)->getContainedType(i)->print(errs());
                     TypeWrapper *tempTyW = new TypeWrapper(tyW->getType()->getContainedType(0)->getContainedType(i),id);
                     InstructionWrapper *typeFieldW = new InstructionWrapper(arg->getParent(),arg,tempTyW->getType(),id++,PARAMETER_FIELD);
                     instnodes.insert(typeFieldW);
