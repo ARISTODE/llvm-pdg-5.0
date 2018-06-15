@@ -3,54 +3,9 @@
 using namespace llvm;
 using namespace std;
 
-
-std::map<const Function *, FunctionWrapper *> funcMap;
-std::map<const CallInst *, CallWrapper *> callMap =
-        std::map<const CallInst *, CallWrapper *>();
-
-static void constructStructMap(Module &M, Instruction* pInstruction,
-                               std::map<AllocaInst*, std::pair<StructType*, std::vector<Type*>>> &alloca_struct_map) {
-    AllocaInst* allocaInst = dyn_cast<AllocaInst>(pInstruction);
-    // constructing struct
-    vector<StructType*> global_struct_list = M.getIdentifiedStructTypes();
-    for (auto st : global_struct_list) {
-        errs() << "Struct Name:" << st->getName().str().substr(7) << "\n";
-        if (allocaInst->getAllocatedType()->getStructName() == st->getName()) {
-            vector<Type *> fields;
-            std::pair<StructType*, std::vector<Type*>> struct_pair;
-
-            StructType::element_iterator SB = st->element_begin();
-            StructType::element_iterator SE = st->element_end();
-            while (SB != SE) {
-                // get the type for each field
-                auto type = *SB;
-                // add each field to vector
-                fields.push_back(type);
-                SB++;
-            }
-            // store the vector with corresponding in the map
-            //structMap[st] = fields;
-            struct_pair.first = st;
-            struct_pair.second = fields;
-            alloca_struct_map[allocaInst] = struct_pair;
-        }
-    }
-
-    errs() << "Construct struct map success !" << "\n";
-    errs() << "Struct Map size: " << alloca_struct_map.size() << "\n";
-};
-
-std::set<InstructionWrapper *> instnodes;
-std::set<InstructionWrapper *> globalList;
-std::map<const Instruction *, InstructionWrapper *> instMap;
-std::map<const Function *, std::set<InstructionWrapper *>> funcInstWList;
-std::map<AllocaInst*, std::pair<StructType*, std::vector<Type*>>> alloca_struct_map;
-std::map<std::string, std::vector<std::string>> struct_fields_map;
-std::map<AllocaInst*, int> seen_structs;
-
 static IRBuilder<> Builder();
 
-char ProgramDependencyGraph::ID = 0;
+char pdg::ProgramDependencyGraph::ID = 0;
 // std::map<const llvm::BasicBlock *,BasicBlockWrapper *>
 // BasicBlockWrapper::bbMap;
 //AliasAnalysis *ProgramDependencyGraph::Global_AA = nullptr;
@@ -95,7 +50,7 @@ void ProgramDependencyGraph::connectAllPossibleFunctions(
 }
 #endif
 
-void ProgramDependencyGraph::drawFormalParameterTree(Function *func,
+void pdg::ProgramDependencyGraph::drawFormalParameterTree(Function *func,
                                                      TreeType treeTy) {
     for (list<ArgumentWrapper *>::iterator
                  argI = funcMap[func]->getArgWList().begin(),
@@ -120,7 +75,7 @@ void ProgramDependencyGraph::drawFormalParameterTree(Function *func,
     }   // end for list
 }
 
-void ProgramDependencyGraph::drawActualParameterTree(CallInst *CI,
+void pdg::ProgramDependencyGraph::drawActualParameterTree(CallInst *CI,
                                                      TreeType treeTy) {
     for (list<ArgumentWrapper *>::iterator
                  argI = callMap[CI]->getArgWList().begin(),
@@ -145,7 +100,7 @@ void ProgramDependencyGraph::drawActualParameterTree(CallInst *CI,
     }   // end for list
 }
 
-int ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *InstW,
+int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *InstW,
                                                    llvm::Function *callee) {
 
     if (InstW == nullptr || callee == nullptr) {
@@ -281,7 +236,7 @@ int ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *InstW,
     return 0;
 }
 
-void ProgramDependencyGraph::connectFunctionAndFormalTrees(
+void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(
         llvm::Function *callee) {
 
     //  errs() << "DEBUG 152: In connectFunctionAndFormalTrees,
@@ -410,7 +365,7 @@ void ProgramDependencyGraph::connectFunctionAndFormalTrees(
     //  errs() << "DEBUG 243 connectFunctionAndFormalTrees END\n";
 }
 
-bool ProgramDependencyGraph::runOnModule(Module &M) {
+bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
     //Global_AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
 
@@ -640,8 +595,6 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
                 if (InstW == InstW2) {
                     continue;
                 }
-
-
                 // process all globals see whether dependency exists
                 if (InstW2->getType() == INST &&
                     isa<LoadInst>(InstW2->getInstruction())) {
@@ -710,19 +663,19 @@ bool ProgramDependencyGraph::runOnModule(Module &M) {
     return false;
 }
 
-void ProgramDependencyGraph::getAnalysisUsage(AnalysisUsage &AU) const {
+void pdg::ProgramDependencyGraph::getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequired<ControlDependencyGraph>();
     AU.addRequired<DataDependencyGraph>();
     AU.setPreservesAll();
 }
 
-void ProgramDependencyGraph::print(llvm::raw_ostream &OS, const llvm::Module *) const {
+void pdg::ProgramDependencyGraph::print(llvm::raw_ostream &OS, const llvm::Module *) const {
     PDG->print(OS, (getPassName().data()));
 }
 
-ProgramDependencyGraph *CreateProgramDependencyGraphPass() {
-    return new ProgramDependencyGraph();
-}
+//pdg::ProgramDependencyGraph *CreateProgramDependencyGraphPass() {
+//    return new pdg::ProgramDependencyGraph();
+//}
 
-static RegisterPass<ProgramDependencyGraph>
+static RegisterPass<pdg::ProgramDependencyGraph>
         PDG("pdg", "Program Dependency Graph Construction", false, true);

@@ -3,15 +3,16 @@
 
 using namespace llvm;
 
-char DataDependencyGraph::ID = 0;
+char pdg::DataDependencyGraph::ID = 0;
 
-bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
+bool pdg::DataDependencyGraph::runOnFunction(llvm::Function &F) {
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   errs() << "++++++++++++++++++++++++++++++ DataDependency::runOnFunction "
           "+++++++++++++++++++++++++++++"
          << '\n';
   errs() << "Function name:" << F.getName().str() << '\n';
   constructFuncMap(*F.getParent(), funcMap);
+
   if (funcMap[&F]->getEntry() == NULL) {
     InstructionWrapper *root = new InstructionWrapper(&F, ENTRY);
     instnodes.insert(root);
@@ -118,10 +119,11 @@ bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
               getDependencyInFunction(F, pInstruction);
 
       for (int i = 0; i < flowdep_set.size(); i++) {
-        errs() << "Debuggin flowdep_set:" << "\n";
+        errs() << "Debugging flowdep_set:" << "\n";
         errs() << *flowdep_set[i] << "\n";
-        DDG->addDependency(instMap[flowdep_set[i]], instMap[pInstruction],
-                           DATA_RAW);
+        //DDG->addDependency(instMap[flowdep_set[i]], instMap[pInstruction], DATA_RAW);
+        DDG->addDependency(instMap[pInstruction], instMap[flowdep_set[i]], DATA_RAW);
+        errs() << *pInstruction << "\n";
       }
       flowdep_set.clear();
 
@@ -133,15 +135,17 @@ bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
       // the return result is NonLocalDepResult. can use getAddress function
       MD->getNonLocalPointerDependency(pInstruction, result);
       // now result stores all possible
-      for (SmallVector<NonLocalDepResult, 20>::iterator II = result.begin(),
-                   EE = result.end();
-           II != EE; ++II) {
-        errs() << "SmallVecter size = " << result.size() << '\n';
-        const MemDepResult nonLocal_res = II->getResult();
+      errs() << "SmallVecter size = " << result.size() << '\n';
+//      for (SmallVector<NonLocalDepResult, 20>::iterator II = result.begin(),
+//                   EE = result.end();
+//           II != EE; ++II) {
+
+      for (NonLocalDepResult &I : result) {
+        const MemDepResult &nonLocal_res = I.getResult();
         InstructionWrapper *itInst = instMap[&*instIt];
         InstructionWrapper *parentInst = instMap[nonLocal_res.getInst()];
 
-        if (nonLocal_res.getInst() != nullptr) {
+        if (nullptr != nonLocal_res.getInst()) {
           errs() << "nonLocal_res.getInst(): " << *nonLocal_res.getInst()
                  << '\n';
           DDG->addDependency(itInst, parentInst, DATA_GENERAL);
@@ -155,19 +159,19 @@ bool DataDependencyGraph::runOnFunction(llvm::Function &F) {
   return false;
 }
 
-void DataDependencyGraph::getAnalysisUsage(AnalysisUsage &AU) const {
+void pdg::DataDependencyGraph::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<AAResultsWrapperPass>();
   AU.addRequired<MemoryDependenceWrapperPass>();
   AU.setPreservesAll();
 }
 
-void DataDependencyGraph::print(raw_ostream &OS, const Module *) const {
+void pdg::DataDependencyGraph::print(raw_ostream &OS, const Module *) const {
   DDG->print(OS, (getPassName().data()));
 }
 
-static RegisterPass<DataDependencyGraph>
+static RegisterPass<pdg::DataDependencyGraph>
         DDG("ddg", "Data Dependency Graph Construction", false, true);
 
-DataDependencyGraph *CreateDataDependencyGraphPass() {
-  return new DataDependencyGraph();
+pdg::DataDependencyGraph *CreateDataDependencyGraphPass() {
+  return new pdg::DataDependencyGraph();
 }
