@@ -5,8 +5,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/InstIterator.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h" #include "llvm/IR/DerivedTypes.h"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -379,9 +378,9 @@ namespace pdg{
         //   return it->second;
         // }
 
-        void addDependency(const NodeT *pDependent, const NodeT *pDepency, int type) {
-            DependencyNode<NodeT> *pFrom = getNodeByData(pDependent);
-            DependencyNode<NodeT> *pTo = getNodeByData(pDepency);
+        void addDependency(const NodeT *from, const NodeT *to, int type) {
+            DependencyNode<NodeT> *pFrom = getNodeByData(from);
+            DependencyNode<NodeT> *pTo = getNodeByData(to);
             pFrom->addDependencyTo(pTo, type);
         }
 

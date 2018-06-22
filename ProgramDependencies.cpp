@@ -443,6 +443,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
             if (isa<CallInst>(pInstruction)) {
                 funcMap[&*F]->getCallInstList().push_back(dyn_cast<CallInst>(pInstruction));
+#if 0
                 if (DbgDeclareInst *ddi = dyn_cast<DbgDeclareInst>(pInstruction)) {
                     errs() << "Find a dbg declare Inst!!!!" << "\n";
                     DILocalVariable *div = ddi->getVariable();
@@ -465,6 +466,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                         }
                     }
                 }
+#endif
             }
 
             if (isa<AllocaInst>(pInstruction)) {
@@ -479,10 +481,9 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
         // print PtrSet only
         ControlDependencyGraph &cdgGraph = getAnalysis<ControlDependencyGraph>(*F);
         DataDependencyGraph &ddgGraph = getAnalysis<DataDependencyGraph>(*F);
-        // set Entries for Function, set up links between dummy entry nodes and their func*
 
-        for (std::set<InstructionWrapper *>::iterator nodeIt =
-                funcInstWList[&*F].begin();
+        // set Entries for Function, set up links between dummy entry nodes and their func*
+        for (std::set<InstructionWrapper *>::iterator nodeIt = funcInstWList[&*F].begin();
              nodeIt != funcInstWList[&*F].end(); nodeIt++) {
 
             InstructionWrapper *InstW = *nodeIt;
@@ -500,7 +501,8 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
         } // end for set Entries...
 
         clock_t begin2 = clock();
-
+        // process call nodes, one call node will only be touched
+        // once(!InstW->getAccess)
         // the iteration should be done for the InstructionWrapperList, not original F
         for (std::set<InstructionWrapper *>::iterator nodeIt =
                 funcInstWList[&*F].begin();
@@ -509,8 +511,6 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
             InstructionWrapper *InstW = *nodeIt;
             llvm::Instruction *pInstruction = InstW->getInstruction();
 
-            // process call nodes, one call node will only be touched
-            // once(!InstW->getAccess)
             if (pInstruction != nullptr && InstW->getType() == INST &&
                 isa<CallInst>(pInstruction) && !InstW->getAccess()) {
                 InstructionWrapper *CallInstW = InstW;
@@ -533,7 +533,9 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                 // TODO: isIntrinsic or not? Consider intrinsics as common
                 // instructions for now, continue directly
                 // determine if the function start with llvm::
-                if (callee->isIntrinsic() || callee->isDeclaration()) {
+                //if (callee->isIntrinsic() || callee->isDeclaration()) {
+                if (callee->isIntrinsic()) {
+                    //errs() << "Intrinsic: " << callee->getName() << "\n";
                     // if it is a var_annotation, save the sensitive value by the way
                     if (callee->getIntrinsicID() == Intrinsic::var_annotation) {
                         Value *v = CI->getArgOperand(0);
@@ -545,11 +547,8 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
                             for (llvm::Use &U : tempI->operands()) {
                                 Value *v_for_cast = U.get();
-                                //sensitive_values.push_back(v_for_cast);
                             }
                         }
-//              else
-//                sensitive_values.push_back(v);
                     }
                     continue;
                 }
@@ -563,26 +562,28 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                 CallWrapper *callW = new CallWrapper(CI);
                 callMap[CI] = callW;
 
-                if (!callee->arg_empty()) {
-                    if (funcMap[callee]->hasTrees() != true) {
-                        //	  errs() << "DEBUG 456 New call for tree construction: "
-                        //<< *InstW->getInstruction() << "\n";  build formal trees in memory
-                        buildFormalParameterTrees(callee);
-                        // add tree edges in PDG
-                        drawFormalParameterTree(callee, FORMAL_IN_TREE);
-                        drawFormalParameterTree(callee, FORMAL_OUT_TREE);
-                        connectFunctionAndFormalTrees(callee);
-                    }
-                    // TODO: We temporarily use this logic since we process F one by
-                    // one, use a better logic later  if callee has parameter trees
-                    // already, just build actual trees
-                    buildActualParameterTrees(CI);
-                    drawActualParameterTree(CI, ACTUAL_IN_TREE);
-                    drawActualParameterTree(CI, ACTUAL_OUT_TREE);
-                } // end if !callee
+                if (!callee->isDeclaration()) {
+                    if (!callee->arg_empty()) {
+                        if (funcMap[callee]->hasTrees() != true) {
+                            //	  errs() << "DEBUG 456 New call for tree construction: "
+                            //<< *InstW->getInstruction() << "\n";  build formal trees in memory
+                            buildFormalParameterTrees(callee);
+                            // add tree edges in PDG
+                            drawFormalParameterTree(callee, FORMAL_IN_TREE);
+                            drawFormalParameterTree(callee, FORMAL_OUT_TREE);
+                            connectFunctionAndFormalTrees(callee);
+                        }
+                        // TODO: We temporarily use this logic since we process F one by
+                        // one, use a better logic later  if callee has parameter trees
+                        // already, just build actual trees
+                        buildActualParameterTrees(CI);
+                        drawActualParameterTree(CI, ACTUAL_IN_TREE);
+                        drawActualParameterTree(CI, ACTUAL_OUT_TREE);
+                    } // end if !callee
 
-                if (0 == connectCallerAndCallee(InstW, callee)) {
-                    InstW->setAccess(true);
+                    if (0 == connectCallerAndCallee(InstW, callee)) {
+                        InstW->setAccess(true);
+                    }
                 }
             } // end callnode
 

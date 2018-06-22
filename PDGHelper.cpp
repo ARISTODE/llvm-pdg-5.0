@@ -16,7 +16,6 @@ void pdg::constructInstMap(llvm::Function &F) {
         for (llvm::inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I) {
             // llvm::errs() << "Current InstMap Size: " << instMap.size() << "\n";
             // if not in instMap yet, insert
-            Instruction *tmpInst = &*I;
 
             if (instMap.find(&*I) == instMap.end()) {
                 InstructionWrapper *iw = new InstructionWrapper(&*I, &F, INST);

@@ -189,9 +189,9 @@ void pdg::ControlDependencyGraph::mockLibraryCall(llvm::Function &F) {
   isLibrary = true;
 }
 
-pdg::ControlDependencyGraph *CreateControlDependencyGraphPass() {
-  return new pdg::ControlDependencyGraph();
-}
+//pdg::ControlDependencyGraph *CreateControlDependencyGraphPass() {
+//  return new pdg::ControlDependencyGraph();
+//}
 
 char pdg::ControlDependencyGraph::ID = 0;
 

@@ -89,6 +89,7 @@ bool pdg::DataDependencyGraph::runOnFunction(llvm::Function &F) {
     }
 
     if(isa<CallInst>(pInstruction)) {
+#if 0
         if (DbgDeclareInst *ddi = dyn_cast<DbgDeclareInst>(pInstruction)) {
           errs() << "This is a dbg declare Inst (DDG)" << "\n";
           DILocalVariable *div = ddi->getVariable();
@@ -110,6 +111,7 @@ bool pdg::DataDependencyGraph::runOnFunction(llvm::Function &F) {
             }
           }
         }
+#endif
       errs() << "This is a call Inst (DDG)" << "\n";
     }
 
@@ -121,9 +123,8 @@ bool pdg::DataDependencyGraph::runOnFunction(llvm::Function &F) {
       for (int i = 0; i < flowdep_set.size(); i++) {
         errs() << "Debugging flowdep_set:" << "\n";
         errs() << *flowdep_set[i] << "\n";
-        //DDG->addDependency(instMap[flowdep_set[i]], instMap[pInstruction], DATA_RAW);
-        DDG->addDependency(instMap[pInstruction], instMap[flowdep_set[i]], DATA_RAW);
-        errs() << *pInstruction << "\n";
+        DDG->addDependency(instMap[flowdep_set[i]], instMap[pInstruction], DATA_RAW);
+        //DDG->addDependency(instMap[pInstruction], instMap[flowdep_set[i]], DATA_RAW);
       }
       flowdep_set.clear();
 
@@ -172,6 +173,6 @@ void pdg::DataDependencyGraph::print(raw_ostream &OS, const Module *) const {
 static RegisterPass<pdg::DataDependencyGraph>
         DDG("ddg", "Data Dependency Graph Construction", false, true);
 
-pdg::DataDependencyGraph *CreateDataDependencyGraphPass() {
-  return new pdg::DataDependencyGraph();
-}
+//pdg::DataDependencyGraph *CreateDataDependencyGraphPass() {
+//  return new pdg::DataDependencyGraph();
+//}

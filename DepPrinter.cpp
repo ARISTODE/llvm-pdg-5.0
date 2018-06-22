@@ -11,8 +11,7 @@ namespace llvm {
         std::string getNodeLabel(pdg::DepGraphNode *Node, pdg::DepGraphNode *Graph){
             using namespace pdg;
             const InstructionWrapper *instW = Node->getData();
-
-            //TODO: why nullptr for Node->getData()?
+//TODO: why nullptr for Node->getData()?
             if(instW == nullptr || instW == NULL){
                 errs() <<"instW " << instW << "\n";
                 return "null instW";
@@ -24,7 +23,6 @@ namespace llvm {
 
             std::string Str;
             raw_string_ostream OS(Str);
-
             switch(instW->getType()) {
                 case ENTRY:
                     return ("<<ENTRY>> " + instW->getFunctionName());
@@ -66,6 +64,7 @@ namespace llvm {
                 }
 
                 case STRUCT_FIELD: {
+#if 1
                     llvm::Instruction *inst = instW->getInstruction();
                     llvm::AllocaInst *allocaInst = dyn_cast<AllocaInst>(inst);
                     llvm::StringRef struct_name = allocaInst->getAllocatedType()->getStructName();
@@ -107,6 +106,7 @@ namespace llvm {
                         ret_string = struct_string + " (" + type_name + ") : " + std::to_string(instW->getFieldId());
                     }
                     return (ret_string);
+#endif
                 }
 
                 default: {
@@ -172,8 +172,8 @@ namespace llvm {
                     Instruction *pInstruction = IW.getDependencyNode()->getInstruction();
                     // pTo Node must be a LoadInst
                     std::string ret_str;
-                    if (isa<StoreInst>(pInstruction)) {
-                        StoreInst *SI = dyn_cast<StoreInst>(pInstruction);
+                    if (isa<LoadInst>(pInstruction)) {
+                        LoadInst *SI = dyn_cast<LoadInst>(pInstruction);
                         Value *valLI = SI->getPointerOperand();
                         ret_str =
                                 "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
@@ -254,7 +254,8 @@ namespace llvm {
                 case CONTROL:
                     return "";
                 case DATA_GENERAL:
-                    return "style=dotted, label = \"{DATA_GENERAL}\"";
+                    return "";
+                    //return "style=dotted, label = \"{DATA_GENERAL}\"";
                 case GLOBAL_VALUE:
                     return "style=dotted";
                 case PARAMETER:
@@ -270,8 +271,7 @@ namespace llvm {
                     if (isa<LoadInst>(pInstruction)) {
                         LoadInst *LI = dyn_cast<LoadInst>(pInstruction);
                         Value *valLI = LI->getPointerOperand();
-                        ret_str =
-                                "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
+                        ret_str = "style=dotted,label = \"{RAW} " + valLI->getName().str() + "\"";
                     } else if (isa<CallInst>(pInstruction)) {
                         ret_str = "style=dotted,label = \"{RAW}\"";
                     } else
