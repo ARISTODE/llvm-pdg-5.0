@@ -221,13 +221,19 @@ void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M) {
             if (argTy->isPointerTy()) {
                 llvm::PointerType *pt = dyn_cast<llvm::PointerType>(argTy);
                 if (pt->getElementType()->isStructTy()) {
-                    errs() << "For Struct " << pt->getElementType()->getStructName() << " at pos " << arg->getArgNo() << "\n";
+                    errs() << "\nFor Struct " << pt->getElementType()->getStructName() << " at pos " << arg->getArgNo() << "\n";
                 }
                 for (auto GEPInst : argW->getGEPList()) {
                     int operand_num = GEPInst->getInstruction()->getNumOperands();
                     llvm::Value *last_idx = GEPInst->getInstruction()->getOperand(operand_num - 1);
                     if (llvm::ConstantInt* constInt = dyn_cast<ConstantInt>(last_idx)) {
                         int field_idx = constInt->getSExtValue();
+                        auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
+                        if (GEP->getSourceElementType()->isPointerTy()) {
+                            if (GEP->getSourceElementType()->getPointerElementType()->isStructTy()) {
+                                errs() << "Struct Name: " << GEP->getSourceElementType()->getPointerElementType()->getStructName() << "\n";
+                            }
+                        }
                         errs() << "Field at pos " << field_idx << "  is used" << "\n";
                     }
                 }
@@ -307,10 +313,19 @@ void pdg::ProgramDependencyGraph::drawFormalParameterTree(Function *func,
 
 void pdg::ProgramDependencyGraph::drawActualParameterTree(CallInst *CI,
                                                           TreeType treeTy) {
+    int ARG_POS = 0;
     for (list<ArgumentWrapper *>::iterator
                  argI = callMap[CI]->getArgWList().begin(),
                  argE = callMap[CI]->getArgWList().end();
          argI != argE; ++argI) {
+
+        llvm::Value *tmp_val = CI->getOperand(ARG_POS); // get the corresponding argument
+        if (llvm::Instruction *tmpInst = dyn_cast<llvm::Instruction>(tmp_val)) {
+            auto TreeBegin = (*argI)->getTree(ACTUAL_IN_TREE).begin();
+            PDG->addDependency(*instnodes.find(instMap[tmpInst]),
+                               *instnodes.find(*TreeBegin), PARAMETER);
+        }
+        ARG_POS++;
 
         for (tree<InstructionWrapper *>::iterator
                      TI = (*argI)->getTree(treeTy).begin(),

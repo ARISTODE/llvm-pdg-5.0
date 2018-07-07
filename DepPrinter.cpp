@@ -276,7 +276,7 @@ namespace llvm {
                 case GLOBAL_VALUE:
                     return "style=dotted";
                 case PARAMETER:
-                    return "style=dashed";
+                    return "style=dashed, color=\"blue\"";
                 case DATA_DEF_USE: {
                     Instruction *pFromInst = Node->getData()->getInstruction();
                     return "style=dotted,label = \"{DEF_USE}\" ";

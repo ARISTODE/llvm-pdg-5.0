@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="290" />
-    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="349" />
+    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="296" />
+    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="364" />
     <bookmark url="file://$PROJECT_DIR$/ConnectFunctions.cpp" line="156" />
     <bookmark url="file://$PROJECT_DIR$/ConnectFunctions.cpp" line="203" />
     <bookmark url="file://$PROJECT_DIR$/ControlDependencies.cpp" line="38" />
@@ -10,10 +10,10 @@
     <bookmark url="file://$PROJECT_DIR$/FunctionWrapper.cpp" line="87" />
     <bookmark url="file://$PROJECT_DIR$/idl_gen.cpp" line="81" />
     <bookmark url="file://$PROJECT_DIR$/ConnectFunctions.cpp" line="147" />
-    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="583" />
-    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="508" />
+    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="598" />
+    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="523" />
     <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="229" />
-    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="526" />
+    <bookmark url="file://$PROJECT_DIR$/ProgramDependencies.cpp" line="541" />
   </component>
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true" buildAllGenerated="true">
     <generated>
@@ -27,26 +27,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98772562-9006-458f-9b00-e78ae48cc67c" name="Default" comment="">
-      <change beforePath="" afterPath="$PROJECT_DIR$/idl_gen.cpp" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" afterPath="$PROJECT_DIR$/CMakeLists.txt" />
-      <change beforePath="$PROJECT_DIR$/ConnectFunctions.cpp" afterPath="$PROJECT_DIR$/ConnectFunctions.cpp" />
-      <change beforePath="$PROJECT_DIR$/ConnectFunctions.h" afterPath="$PROJECT_DIR$/ConnectFunctions.h" />
-      <change beforePath="$PROJECT_DIR$/ControlDependencies.cpp" afterPath="$PROJECT_DIR$/ControlDependencies.cpp" />
-      <change beforePath="$PROJECT_DIR$/DataDependencies.cpp" afterPath="$PROJECT_DIR$/DataDependencies.cpp" />
-      <change beforePath="$PROJECT_DIR$/DataDependencies.h" afterPath="$PROJECT_DIR$/DataDependencies.h" />
       <change beforePath="$PROJECT_DIR$/DepPrinter.cpp" afterPath="$PROJECT_DIR$/DepPrinter.cpp" />
-      <change beforePath="$PROJECT_DIR$/DependencyGraph.h" afterPath="$PROJECT_DIR$/DependencyGraph.h" />
-      <change beforePath="$PROJECT_DIR$/FunctionWrapper.cpp" afterPath="$PROJECT_DIR$/FunctionWrapper.cpp" />
-      <change beforePath="$PROJECT_DIR$/FunctionWrapper.h" afterPath="$PROJECT_DIR$/FunctionWrapper.h" />
-      <change beforePath="$PROJECT_DIR$/PDGHelper.cpp" afterPath="$PROJECT_DIR$/PDGHelper.cpp" />
-      <change beforePath="$PROJECT_DIR$/PDGHelper.h" afterPath="$PROJECT_DIR$/PDGHelper.h" />
       <change beforePath="$PROJECT_DIR$/ProgramDependencies.cpp" afterPath="$PROJECT_DIR$/ProgramDependencies.cpp" />
-      <change beforePath="$PROJECT_DIR$/ProgramDependencies.h" afterPath="$PROJECT_DIR$/ProgramDependencies.h" />
-      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/pdgragh.main.dot" afterPath="$PROJECT_DIR$/test/test_parameter_tree/pdgragh.main.dot" />
-      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/test.bc" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/test.c" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/test.ll" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.f.dot" afterPath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.f.dot" />
+      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.main.dot" afterPath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.main.dot" />
+      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.multiuse.dot" afterPath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.multiuse.dot" />
+      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.use1.dot" afterPath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.use1.dot" />
+      <change beforePath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.use2.dot" afterPath="$PROJECT_DIR$/test/test_parameter_tree/bitcode/pdgragh.use2.dot" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -61,17 +48,17 @@
     <favorites_list name="CDG" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.56334233">
+    <splitter split-orientation="horizontal" split-proportion="0.5148248">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file leaf-file-name="ProgramDependencies.cpp" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/ProgramDependencies.cpp">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="588">
-                  <caret line="528" column="24" lean-forward="false" selection-start-line="528" selection-start-column="24" selection-end-line="528" selection-end-column="24" />
+                <state relative-caret-position="868">
+                  <caret line="346" column="7" lean-forward="false" selection-start-line="346" selection-start-column="7" selection-end-line="346" selection-end-column="7" />
                   <folding>
                     <element signature="e#297#821#0" expanded="false" />
-                    <element signature="e#11317#12940#0" expanded="true" />
+                    <element signature="e#11782#13405#0" expanded="true" />
                   </folding>
                 </state>
               </provider>
@@ -91,11 +78,11 @@
       </split-first>
       <split-second>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file leaf-file-name="DepPrinter.cpp" pinned="false" current-in-tab="true">
+          <file leaf-file-name="DepPrinter.cpp" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/DepPrinter.cpp">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="572">
-                  <caret line="107" column="33" lean-forward="false" selection-start-line="107" selection-start-column="33" selection-end-line="107" selection-end-column="33" />
+                <state relative-caret-position="488">
+                  <caret line="278" column="53" lean-forward="false" selection-start-line="278" selection-start-column="53" selection-end-line="278" selection-end-column="53" />
                   <folding>
                     <element signature="e#190#192#0" expanded="true" />
                     <element signature="e#6941#6943#0" expanded="true" />
@@ -117,7 +104,7 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="DataDependencies.cpp" pinned="false" current-in-tab="false">
+          <file leaf-file-name="DataDependencies.cpp" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/DataDependencies.cpp">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="-3224">
@@ -170,8 +157,8 @@
         <option value="$PROJECT_DIR$/PDGHelper.cpp" />
         <option value="$PROJECT_DIR$/ConnectFunctions.cpp" />
         <option value="$PROJECT_DIR$/FunctionWrapper.cpp" />
-        <option value="$PROJECT_DIR$/DepPrinter.cpp" />
         <option value="$PROJECT_DIR$/DependencyGraph.h" />
+        <option value="$PROJECT_DIR$/DepPrinter.cpp" />
         <option value="$PROJECT_DIR$/ProgramDependencies.cpp" />
       </list>
     </option>
@@ -268,12 +255,12 @@
       <workItem from="1530194394170" duration="52352000" />
       <workItem from="1530712725579" duration="203000" />
       <workItem from="1530712946237" duration="24000" />
-      <workItem from="1530712986377" duration="62471000" />
+      <workItem from="1530712986377" duration="66497000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="383229000" />
+    <option name="totallyTimeSpent" value="387255000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="64" y="1069" width="1857" height="1092" extended-state="6" />
@@ -622,16 +609,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/FunctionWrapper.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="644">
-          <caret line="197" column="5" lean-forward="false" selection-start-line="197" selection-start-column="5" selection-end-line="197" selection-end-column="5" />
-          <folding>
-            <element signature="e#1752#2273#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/PDGHelper.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="336">
@@ -669,6 +646,36 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/DependencyGraph.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="99" column="42" lean-forward="false" selection-start-line="99" selection-start-column="42" selection-end-line="99" selection-end-column="42" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/FunctionWrapper.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="644">
+          <caret line="197" column="5" lean-forward="false" selection-start-line="197" selection-start-column="5" selection-end-line="197" selection-end-column="5" />
+          <folding>
+            <element signature="e#1752#2273#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DepPrinter.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="488">
+          <caret line="278" column="53" lean-forward="false" selection-start-line="278" selection-start-column="53" selection-end-line="278" selection-end-column="53" />
+          <folding>
+            <element signature="e#190#192#0" expanded="true" />
+            <element signature="e#6941#6943#0" expanded="true" />
+            <element signature="e#7429#7431#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/DataDependencies.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-3224">
@@ -679,33 +686,13 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DependencyGraph.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="99" column="42" lean-forward="false" selection-start-line="99" selection-start-column="42" selection-end-line="99" selection-end-column="42" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DepPrinter.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="572">
-          <caret line="107" column="33" lean-forward="false" selection-start-line="107" selection-start-column="33" selection-end-line="107" selection-end-column="33" />
-          <folding>
-            <element signature="e#190#192#0" expanded="true" />
-            <element signature="e#6941#6943#0" expanded="true" />
-            <element signature="e#7429#7431#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ProgramDependencies.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="588">
-          <caret line="528" column="24" lean-forward="false" selection-start-line="528" selection-start-column="24" selection-end-line="528" selection-end-column="24" />
+        <state relative-caret-position="868">
+          <caret line="346" column="7" lean-forward="false" selection-start-line="346" selection-start-column="7" selection-end-line="346" selection-end-column="7" />
           <folding>
             <element signature="e#297#821#0" expanded="false" />
-            <element signature="e#11317#12940#0" expanded="true" />
+            <element signature="e#11782#13405#0" expanded="true" />
           </folding>
         </state>
       </provider>
