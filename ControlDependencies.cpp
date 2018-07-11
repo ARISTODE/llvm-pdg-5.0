@@ -13,43 +13,24 @@ int pdg::ControlDependencyGraph::getDependenceType(const BasicBlock *A,
         return ControlType::FALSE;
       } else {
         DEBUG(dbgs() << *A << "\n" << *B << "\n");
-        assert(false &&
-               "Asking for edge type between unconnected basic blocks!");
+        errs() << "Askikng for edge type between unconnected basic blocks!" << "\n";
       }
     }
   }
   return ControlType::OTHER;
 }
 
-void pdg::ControlDependencyGraph::computeDependencies(llvm::Function &F,
-                                                 llvm::PostDominatorTree *PDT) {
-  DEBUG(dbgs() << "++++++++++++++++++++++++++++++ ControlDependency::runOnFunction "
-            "+++++++++++++++++++++++++++++" << '\n');
-  constructFuncMap(*F.getParent(), funcMap);
-  /// Zhiyuan: explicitly construct the dummy ENTRY NODE:
-  if(funcMap[&F]->getEntry() != NULL) {
-      return;
-  }
-  InstructionWrapper *root = new InstructionWrapper(&F, ENTRY);
+void pdg::ControlDependencyGraph::createFunctionEntryNode() {
+  InstructionWrapper *root = new InstructionWrapper(func, ENTRY);
   instnodes.insert(root);
-  funcInstWList[&F].insert(root);
-
+  funcInstWList[func].insert(root);
   DEBUG(dbgs() << " CDG.cpp after insert nodes.size " << instnodes.size() << "\n"
-         << " Function: " << F.getName().str() << '\n');
-  funcMap[&F]->setEntry(root);
+               << " Function: " << func->getName().str() << '\n');
+  funcMap[func]->setEntry(root);
+}
 
-  // may have changed to DomTreeNodeBase
-  DomTreeNodeBase<BasicBlock> *node = PDT->getNode(&F.getEntryBlock());
-
-  while (node && node->getBlock()) {
-    // Walking the path backward and adding dependencies.
-    addDependency(root, node->getBlock(), CONTROL);
-    node = node->getIDom(); // const DomTreeNodeBase<NodeT> *IDom;
-  }
-
-  std::vector<std::pair<BasicBlock *, BasicBlock *>> EdgeSet;
-
-  for (Function::iterator BI = F.begin(), E = F.end(); BI != E; ++BI) {
+void pdg::ControlDependencyGraph::findAllEdgeSet() {
+  for (Function::iterator BI = func->begin(), E = func->end(); BI != E; ++BI) {
     BasicBlock *I = dyn_cast<BasicBlock>(BI);
     for (succ_iterator SI = succ_begin(I), SE = succ_end(I); SI != SE; ++SI) {
       assert(I && *SI);
@@ -59,10 +40,12 @@ void pdg::ControlDependencyGraph::computeDependencies(llvm::Function &F,
       }
     }
   }
+}
 
+void pdg::ControlDependencyGraph::computeControlDependencyFromEdgeSet() {
   typedef std::vector<std::pair<BasicBlock *, BasicBlock *>>::iterator EdgeItr;
 
-  DEBUG(dbgs() << "computerDependencies DEBUG 1\n");
+  DEBUG(dbgs() << "computeDependencies DEBUG 1\n");
 
   for (EdgeItr I = EdgeSet.begin(), E = EdgeSet.end(); I != E; ++I) {
     std::pair<BasicBlock *, BasicBlock *> Edge = *I;
@@ -91,19 +74,30 @@ void pdg::ControlDependencyGraph::computeDependencies(llvm::Function &F,
 
   // std::vector<std::pair<BasicBlock *, BasicBlock *> > EdgeSet;
   EdgeSet.clear();
+}
 
-  for (Function::iterator FI = F.begin(), E = F.end(); FI != E; ++FI) {
-    /// Zhiyuan comment: find adjacent BasicBlock pairs in CFG, but the
-    /// predecessor does not dominate successor.
-    BasicBlock *I = dyn_cast<BasicBlock>(FI);
-    for (succ_iterator SI = succ_begin(I), SE = succ_end(I); SI != SE; ++SI) {
-      assert(I && *SI);
-      if (!PDT->dominates(*SI, I)) {
-        BasicBlock *B_second = dyn_cast<BasicBlock>(*SI);
-        EdgeSet.push_back(std::make_pair(I, B_second));
-      }
-    }
+void pdg::ControlDependencyGraph::computeDependencies(llvm::Function &F,
+                                                 llvm::PostDominatorTree *PDT) {
+  DEBUG(dbgs() << "++++++++++++++++++++++++++++++ ControlDependency::runOnFunction " "+++++++++++++++++++++++++++++" << '\n');
+  func = &F;
+  constructFuncMap(*func->getParent());
+  /// Zhiyuan: explicitly construct the dummy ENTRY NODE:
+  if(funcMap[func]->getEntry() != NULL) {
+      return;
+  } else {
+    createFunctionEntryNode();
   }
+
+  // may have changed to DomTreeNodeBase
+  DomTreeNodeBase<BasicBlock> *node = PDT->getNode(&F.getEntryBlock());
+  while (node && node->getBlock()) {
+    // Walking the path backward and adding dependencies.
+    addDependency(root, node->getBlock(), CONTROL);
+    node = node->getIDom(); // const DomTreeNodeBase<NodeT> *IDom;
+  }
+
+  findAllEdges();
+  computeControlDependencyFromEdgeSet();
   DEBUG(dbgs() << "Finish Control Depen Analysis" << "\n");
 }
 
@@ -159,7 +153,6 @@ void pdg::ControlDependencyGraph::addDependency(llvm::BasicBlock *from,
 
 bool pdg::ControlDependencyGraph::runOnFunction(Function &F) {
   constructInstMap(F);
-
   PDT = &getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
   computeDependencies(F, PDT);
   return false;

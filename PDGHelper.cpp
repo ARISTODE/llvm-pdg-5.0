@@ -72,7 +72,7 @@ void pdg::constructStructMap(llvm::Module &M,
 }
 #endif
 
-void pdg::constructFuncMap(Module &M, std::map<const Function *, FunctionWrapper *> &funcMap) {
+void pdg::constructFuncMap(Module &M) {
         for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
             Function *f = dyn_cast<Function>(F);
             constructInstMap(*f);

@@ -46,14 +46,6 @@ namespace pdg {
             delete CDG;
         }
 
-        bool runOnFunction(llvm::Function &F);
-
-        void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
-
-        llvm::StringRef getPassName() const;
-
-        void print(llvm::raw_ostream &OS, const llvm::Module *M = 0) const;
-
         InstructionWrapper *getRoot() const { return root; }
 
         int getDependenceType(const llvm::BasicBlock *AW,
@@ -66,6 +58,20 @@ namespace pdg {
 
         void computeDependencies(llvm::Function &F, llvm::PostDominatorTree *PDT);
 
+        void createFunctionEntryNode();
+
+        void findAllEdges();
+
+        void computeControlDependencyFromEdgeSet();
+
+        bool runOnFunction(llvm::Function &F);
+
+        void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
+
+        llvm::StringRef getPassName() const;
+
+        void print(llvm::raw_ostream &OS, const llvm::Module *M = 0) const;
+
     private:
         /// added by Zhiyuan: Mar 4, 2015. transfer basic blocks to instructions
         void addDependency(InstructionWrapper *from, llvm::BasicBlock *to, int type);
@@ -75,6 +81,7 @@ namespace pdg {
         /// added by Zhiyuan: Feb 19, 2015.
         llvm::Function *func;
         InstructionWrapper *root;
+        std::vector<std::pair<BasicBlock *, BasicBlock *>> EdgeSet;
         bool isLibrary;
         static int entry_id;
     };

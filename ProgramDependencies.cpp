@@ -167,12 +167,8 @@ void pdg::ProgramDependencyGraph::buildFormalTree(Argument *arg, TreeType treeTy
 
     auto treeRoot = (*argWLoc)->getTree(treeTy).set_head(treeTyW);
 
-    //  errs() << "treeRoot = " << *(*treeRoot)->getFieldType() << "\n";
-
     TypeWrapper *tyW = new TypeWrapper(arg->getType(),field_pos++);
 
-    //TODO: function ptr case...
-    //avoid FILE*
     string Str;
     raw_string_ostream OS(Str);
     OS << *tyW->getType();
@@ -616,7 +612,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
     DEBUG(dbgs() << "ProgramDependencyGraph::runOnModule" << '\n');
 
-    constructFuncMap(M, funcMap);
+    constructFuncMap(M);
 
     for (auto &func : funcMap) {
         DEBUG(dbgs() << func.first->getName() << "\n");

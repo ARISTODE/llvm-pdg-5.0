@@ -1,0 +1,15 @@
+digraph "Data dependency graph for 'use1' function" {
+	label="Data dependency graph for 'use1' function";
+
+	Node0x9701b40 [shape=record,label="{  %addr.addr = alloca i32*, align 8}"];
+	Node0x9701b40 -> Node0x9701bd0[style=dotted,label = "{DEF_USE}" ];
+	Node0x9701b40 -> Node0x9701c60[style=dotted,label = "{DEF_USE}" ];
+	Node0x9701bd0 [shape=record,label="{  store i32* %addr, i32** %addr.addr, align 8}"];
+	Node0x9701bd0 -> Node0x9701c60[style=dotted,label = "{RAW} addr.addr"];
+	Node0x9701c60 [shape=record,label="{  %0 = load i32*, i32** %addr.addr, align 8}"];
+	Node0x9701c60 -> Node0x96ffb30[style=dotted,label = "{DEF_USE}" ];
+	Node0x96ffb30 [shape=record,label="{  %1 = load i32, i32* %0, align 4}"];
+	Node0x96ffb30 -> Node0x9702f80[style=dotted,label = "{DEF_USE}" ];
+	Node0x9702f80 [shape=record,label="{  %call = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str, i32 0, i32 0), i32 %1)}"];
+	Node0x9701cd0 [shape=record,label="{  ret void}"];
+}
