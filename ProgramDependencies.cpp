@@ -80,7 +80,7 @@ int pdg::ProgramDependencyGraph::buildFormalTypeTree(Argument *arg, TypeWrapper 
                 for(unsigned int i = 0; i < tyW->getType()->getContainedType(0)->getNumContainedTypes(); i++){
                     TypeWrapper *tempTyW = new TypeWrapper(tyW->getType()->getContainedType(0)->getContainedType(i),field_pos);
                     parent_type = tyW->getType();
-                    errs() << parent_type->isPointerTy() << "\n";
+                    DEGUB(dbgs() << parent_type->isPointerTy() << "\n");
                     // build a new instWrapper for each single argument and then insert the inst to instnodes.
                     InstructionWrapper *typeFieldW = new InstructionWrapper(arg->getParent(), arg, tempTyW->getType(), parent_type, field_pos++, PARAMETER_FIELD);
                     instnodes.insert(typeFieldW);
@@ -236,43 +236,66 @@ void pdg::ProgramDependencyGraph::buildActualParameterTrees(CallInst *CI) {
     }
 }
 
+//void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M) {
+//    for (llvm::Function &Func : M) {
+//        FunctionWrapper *funcW = funcMap[&Func];
+//        if(funcW->getArgWList().size() == 0) {
+//            continue;
+//        }
+//        for (ArgumentWrapper *argW : funcW->getArgWList()) {
+//            Argument *arg = argW->getArg();
+//            llvm::Type *argTy = arg->getType();
+//            // if find a struct type, check GEPList to see which field is used
+//            //if (argTy->isStructTy() || argTy->isPointerTy()) {
+//            if (argTy->isPointerTy()) {
+//                llvm::PointerType *pt = dyn_cast<llvm::PointerType>(argTy);
+//                if (pt->getElementType()->isStructTy()) {
+//                    errs() << "\nFor Struct " << pt->getElementType()->getStructName() << " at pos " << arg->getArgNo() << "\n";
+//                }
+//                for (auto GEPInst : argW->getGEPList()) {
+//                    int operand_num = GEPInst->getInstruction()->getNumOperands();
+//                    llvm::Value *last_idx = GEPInst->getInstruction()->getOperand(operand_num - 1);
+//                    if (llvm::ConstantInt* constInt = dyn_cast<ConstantInt>(last_idx)) {
+//                        int field_idx = constInt->getSExtValue();
+//                        auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
+//                        if (GEP->getSourceElementType()->isPointerTy()) {
+//                            if (GEP->getSourceElementType()->getPointerElementType()->isStructTy()) {
+//                                errs() << "Struct Name: " << GEP->getSourceElementType()->getPointerElementType()->getStructName() << "\n";
+//                            }
+//                        }
+//                        errs() << "Field at pos " << field_idx << "  is used" << "\n";
+//                    }
+//                }
+//            } else {
+//                // if only normal type
+//                for (auto userIter = arg->user_begin(); userIter != arg->user_end(); ++userIter) {
+//                    if (llvm::Instruction *tmpInst = dyn_cast<Instruction>(*userIter)) {
+//                        errs() << "Arg at pos " << arg->getArgNo() << "is used" << "\n";
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
 void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M) {
-    for (llvm::Function &Func : M) {
-        FunctionWrapper *funcW = funcMap[&Func];
-        if(funcW->getArgWList().size() == 0) {
-            continue;
-        }
-        for (ArgumentWrapper *argW : funcW->getArgWList()) {
-            Argument *arg = argW->getArg();
-            llvm::Type *argTy = arg->getType();
-            // if find a struct type, check GEPList to see which field is used
-            //if (argTy->isStructTy() || argTy->isPointerTy()) {
-            if (argTy->isPointerTy()) {
-                llvm::PointerType *pt = dyn_cast<llvm::PointerType>(argTy);
-                if (pt->getElementType()->isStructTy()) {
-                    errs() << "\nFor Struct " << pt->getElementType()->getStructName() << " at pos " << arg->getArgNo() << "\n";
+    for (llvm::Function &func : M) {
+        errs() << "\n --------------------------- \n";
+        errs() << "Function Name:" << func.getName() << "\n";
+
+        auto arg_list = funcMap[&func]->getArgWList();
+        for (auto argW : arg_list) {
+            auto treeIter = argW->getTree(FORMAL_IN_TREE).begin();
+            for (; treeIter != argW->getTree(FORMAL_IN_TREE).end(); ++treeIter) {
+                InstructionWrapper *curTyNode = *treeIter;
+                if (curTyNode->getParentType() != nullptr) {
+                    errs() << "Parent Type: " << curTyNode->getParentType()->getTypeID() << "\n";
+                } else {
+                    errs() << "This is the root type node. " << "\n";
                 }
-                for (auto GEPInst : argW->getGEPList()) {
-                    int operand_num = GEPInst->getInstruction()->getNumOperands();
-                    llvm::Value *last_idx = GEPInst->getInstruction()->getOperand(operand_num - 1);
-                    if (llvm::ConstantInt* constInt = dyn_cast<ConstantInt>(last_idx)) {
-                        int field_idx = constInt->getSExtValue();
-                        auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
-                        if (GEP->getSourceElementType()->isPointerTy()) {
-                            if (GEP->getSourceElementType()->getPointerElementType()->isStructTy()) {
-                                errs() << "Struct Name: " << GEP->getSourceElementType()->getPointerElementType()->getStructName() << "\n";
-                            }
-                        }
-                        errs() << "Field at pos " << field_idx << "  is used" << "\n";
-                    }
-                }
-            } else {
-                // if only normal type
-                for (auto userIter = arg->user_begin(); userIter != arg->user_end(); ++userIter) {
-                    if (llvm::Instruction *tmpInst = dyn_cast<Instruction>(*userIter)) {
-                        errs() << "Arg at pos " << arg->getArgNo() << "is used" << "\n";
-                    }
-                }
+                errs() << "isVisited: " << curTyNode->getVisited() << "\n";
+                errs() << "Relative position to parent: " << curTyNode->getFieldId() << "\n";
+                errs() << "Node Type: " << curTyNode->getFieldType()->getTypeID() << "\n";
             }
         }
     }
@@ -487,20 +510,15 @@ void pdg::ProgramDependencyGraph::linkTypeNodeWithGEPInst(std::list<ArgumentWrap
             auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
             llvm::Type *GEPResTy = GEP->getResultElementType();
             llvm::Type *GEPSrcTy = GEP->getSourceElementType();
-            //if (GEPSrcTy->isStructTy()) {
-            //errs() << "Source Type" << GEPSrcTy->getStructName() << "\n";
-            //}
             if (parent_type != nullptr) {
-                errs() << "Source Type" << GEPSrcTy->getTypeID() << "\n";
-                errs() << parent_type->getTypeID() << "\n\n";
+                DEBUG(dbgs() << "Source Type" << GEPSrcTy->getTypeID() << "\n");
+                DEBUG(dbgs() << parent_type->getTypeID() << "\n\n");
             }
 
             llvm::Type *TreeNodeTy = (*formal_in_TI)->getFieldType();
             // get access field id from GEP
             int field_idx = constInt->getSExtValue();
-            // plus one. Since for struct, the 0 index is used by the parent struct type
-            //if (field_idx+1 == (*formal_in_TI)->getFieldId() && GEPResTy == TreeNodeTy && GEPSrcTy == (*formal_in_TI)->getParentType()) {
-            // parent_type must be a pointer. Since only sub fields can have parent that is not nullptr
+            // plus one. Since for struct, the 0 index is used by the parent struct type parent_type must be a pointer. Since only sub fields can have parent that is not nullptr
             if (parent_type->isPointerTy()) {
                 parent_type = parent_type->getPointerElementType();
             }
@@ -615,7 +633,6 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
     DEBUG(dbgs() << "======Global List: ======\n");
 
-    //    M.getGlobalList().dump();
     for (llvm::Module::global_iterator globalIt = M.global_begin();
          globalIt != M.global_end(); ++globalIt) {
 
@@ -676,69 +693,12 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
             if (isa<CallInst>(pInstruction)) {
                 funcMap[&*F]->getCallInstList().push_back(dyn_cast<CallInst>(pInstruction));
-#if 0
-                if (DbgDeclareInst *ddi = dyn_cast<DbgDeclareInst>(pInstruction)) {
-                    DEBUG(dbgs() << "Find a dbg declare Inst!!!!" << "\n");
-                    DILocalVariable *div = ddi->getVariable();
-                    DEBUG(dbgs() << div->getRawName()->getString().str() << "\n");
-                    // fetch metadata associate with the dbg inst
-                    MDNode *mdnode = dyn_cast<MDNode>(div->getRawType());
-                    DICompositeType *dct = dyn_cast<DICompositeType>(mdnode);
-
-                    std::string struct_name = dct->getName().str();
-                    // ensure existing struct name
-                    for (auto node : dct->getElements()) {
-                        // retrive the name in the struct
-                        DIDerivedType *didt = dyn_cast<DIDerivedType>(node);
-                        std::string var_name = didt->getName().str();
-                        if (struct_fields_map.find(struct_name) == struct_fields_map.end()) {
-                            struct_fields_map[struct_name] = std::vector<std::string>();
-                            struct_fields_map[struct_name].push_back(var_name);
-                        } else {
-                            struct_fields_map[struct_name].push_back(var_name);
-                        }
-                    }
-                }
-#endif
             }
 
-#if 0
-            if (isa<AllocaInst>(pInstruction)) {
-                // find struct allocation
-                AllocaInst *alloinst = dyn_cast<AllocaInst>(pInstruction);
-                if (alloinst->getAllocatedType()->isStructTy() || alloinst->getAllocatedType()->isPointerTy()) {
-
-                    if (alloinst->getAllocatedType()->isPointerTy()) {
-                        llvm::PointerType *pt = dyn_cast<PointerType>(alloinst->getAllocatedType());
-                        if(!pt->getElementType()->isStructTy()) {
-                            continue;
-                        }
-                    }
-                    constructStructMap(M, pInstruction, alloca_struct_map);
-                }
-            }
-#endif
         }
         // print PtrSet only
         ControlDependencyGraph &cdgGraph = getAnalysis<ControlDependencyGraph>(*F);
         DataDependencyGraph &ddgGraph = getAnalysis<DataDependencyGraph>(*F);
-
-        // set Entries for Function, set up links between dummy entry nodes and their func*
-        for (std::set<InstructionWrapper *>::iterator nodeIt = funcInstWList[&*F].begin();
-             nodeIt != funcInstWList[&*F].end(); nodeIt++) {
-
-            InstructionWrapper *InstW = *nodeIt;
-            if (InstW->getType() == ENTRY) {
-                DEBUG(dbgs() << "Find Entry" << "\n");
-                std::map<const llvm::Function *, FunctionWrapper *>::const_iterator FI =
-                        funcMap.find(InstW->getFunction());
-
-                if (FI != funcMap.end()) {
-                    //   errs() << "find successful!" << "\n";
-                    funcMap[InstW->getFunction()]->setEntry(InstW);
-                }
-            }
-        } // end for set Entries...
 
         clock_t begin2 = clock();
         // process call nodes, one call node will only be touched
@@ -752,7 +712,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
             llvm::Instruction *pInstruction = InstW->getInstruction();
 
             if (pInstruction != nullptr && InstW->getType() == INST &&
-                isa<CallInst>(pInstruction) && !InstW->getAccess()) {
+                isa<CallInst>(pInstruction) && !InstW->getVisited()) {
                 InstructionWrapper *CallInstW = InstW;
                 CallInst *CI = dyn_cast<CallInst>(pInstruction);
                 Function *callee = CI->getCalledFunction();
@@ -823,7 +783,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                     } // end if !callee
 
                     if (0 == connectCallerAndCallee(InstW, callee)) {
-                        InstW->setAccess(true);
+                        InstW->setVisited(true);
                     }
 
                     // link field inst with argument inst
