@@ -71,6 +71,14 @@ namespace pdg {
 
         void printArgUseInfo(llvm::Module &M);
 
+        void collectGlobalInstList();
+
+        void categorizeInstInFunc(llvm::Function *func);
+
+        bool processingCallInst(InstructionWrapper *instW);
+
+        bool addNodeDependencies(InstructionWrapper *instW1, InstructionWrapper *instW2);
+
         bool runOnModule(llvm::Module &M);
 
         void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
@@ -78,6 +86,11 @@ namespace pdg {
         llvm::StringRef getPassName() const { return "Program Dependency Graph"; }
 
         void print(llvm::raw_ostream &OS, const llvm::Module *M = 0) const;
+
+    private:
+        llvm::Module *module;
+        DataDependencyGraph *ddg;
+        ControlDependencyGraph *cdg;
     };
 }
 
