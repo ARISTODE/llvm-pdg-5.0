@@ -9,8 +9,6 @@
 #include "llvm/Pass.h"
 #include "ControlDependencies.h"
 #include "DataDependencies.h"
-#include "ConnectFunctions.h"
-
 
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/LLVMContext.h"
@@ -47,26 +45,29 @@ namespace pdg {
             delete PDG;
         }
 
+        tree<InstructionWrapper*>::iterator getInstInsertLoc(ArgumentWrapper *argW, TypeWrapper *tyW, TreeType treeType);
+
+        void insertArgToTree(TypeWrapper *tyW, ArgumentWrapper *pArgW, TreeType treeTy, tree<InstructionWrapper*>::iterator insertLoc);
+
         int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy, int field_pos);
 
         void buildFormalTree(Argument *arg, TreeType treeTy, int field_pos);
 
         void buildFormalParameterTrees(Function *callee);
 
+        void buildActualParameterTrees(CallInst *CI);
+
         void drawFormalParameterTree(Function *func, TreeType treeTy);
 
         void drawActualParameterTree(CallInst *CI, TreeType treeTy);
 
         void drawDependencyTree(Function *func);
-        //    void drawParameterTree(llvm::Function* call_func, TreeType treeTy);
 
-//  void connectAllPossibleFunctions(InstructionWrapper *CInstW,
-//                                   FunctionType *funcTy);
+        void linkTypeNodeWithGEPInst(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI);
 
         void connectFunctionAndFormalTrees(Function *callee);
 
-        int connectCallerAndCallee(InstructionWrapper *CInstW,
-                                   llvm::Function *callee);
+        int connectCallerAndCallee(InstructionWrapper *CInstW, llvm::Function *callee);
 
         void printArgUseInfo(llvm::Module &M);
 
@@ -77,14 +78,6 @@ namespace pdg {
         llvm::StringRef getPassName() const { return "Program Dependency Graph"; }
 
         void print(llvm::raw_ostream &OS, const llvm::Module *M = 0) const;
-
-        std::map<const llvm::Function*, FunctionWrapper *> getFuncMap() {
-            return funcMap;
-        };
-
-        std::map<const llvm::Instruction*, InstructionWrapper*> getInstMap() {
-            return instMap;
-        };
     };
 }
 

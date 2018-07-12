@@ -14,7 +14,7 @@ char pdg::ProgramDependencyGraph::ID = 0;
 static std::set<Type*> recursive_types;
 static std::set<Type*> unseparated_types;
 
-tree<pdg::InstructionWrapper*>::iterator pdg::getInstInsertLoc(pdg::ArgumentWrapper *argW, TypeWrapper *tyW, TreeType treeTy) {
+tree<pdg::InstructionWrapper*>::iterator pdg::ProgramDependencyGraph::getInstInsertLoc(pdg::ArgumentWrapper *argW, TypeWrapper *tyW, TreeType treeTy) {
     tree<pdg::InstructionWrapper*>::iterator insert_loc;
     for(tree<pdg::InstructionWrapper*>::iterator treeIt = argW->getTree(treeTy).begin(),
                 treeE = argW->getTree(treeTy).end(); treeIt != treeE; ++treeIt){
@@ -33,6 +33,16 @@ pdg::ArgumentWrapper* getArgWrapperFromFunction(pdg::FunctionWrapper *funcW, Arg
             return *argWI;
     }
     return nullptr;
+}
+
+void pdg::ProgramDependencyGraph::insertArgToTree(TypeWrapper *tyW, ArgumentWrapper *pArgW, TreeType treeTy,
+                                                  tree<InstructionWrapper *>::iterator insertLoc) {
+    Argument *arg = pArgW->getArg();
+    TypeWrapper *tempTyW = new TypeWrapper(tyW->getType()->getPointerElementType(), id);
+    llvm::Type *parent_type = nullptr;
+    InstructionWrapper *typeFieldW = new InstructionWrapper(arg->getParent(), arg, tempTyW->getType(), parent_type, id++,PARAMETER_FIELD);
+    instnodes.insert(typeFieldW);
+    pArgW->getTree(treeTy).append_child(insertLoc,typeFieldW);
 }
 
 int pdg::ProgramDependencyGraph::buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy, int field_pos) {
@@ -207,6 +217,25 @@ void pdg::ProgramDependencyGraph::buildFormalParameterTrees(llvm::Function *call
     funcMap[callee]->setTreeFlag(true);
 }
 
+void pdg::ProgramDependencyGraph::buildActualParameterTrees(CallInst *CI) {
+    Function *callee = CI->getCalledFunction();
+    auto argI = callMap[CI]->getArgWList().begin();
+    auto argE = callMap[CI]->getArgWList().end();
+
+    auto argFI = funcMap[callee]->getArgWList().begin();
+    auto argFE = funcMap[callee]->getArgWList().end();
+
+    DEBUG(dbgs() << "Building actual parameter tree:" << callee->getName() << "\n");
+    //  errs() << "argFI FORMAL_IN_TREE size " << (*argFI)->getTree(FORMAL_IN_TREE).size() << "\n";
+
+    //copy FormalInTree in callee to ActualIn/OutTree in callMap
+    for(; argI != argE && argFI != argFE; ++argI,++argFI){
+        (*argI)->copyTree((*argFI)->getTree(FORMAL_IN_TREE), ACTUAL_IN_TREE);
+        (*argI)->copyTree((*argFI)->getTree(FORMAL_IN_TREE), ACTUAL_OUT_TREE);
+        //errs() << "argIcopyTree size " << (*argI)->getTree(ACTUAL_IN_TREE).size() << " " << (*argI)->getTree(ACTUAL_OUT_TREE).size();
+    }
+}
+
 void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M) {
     for (llvm::Function &Func : M) {
         FunctionWrapper *funcW = funcMap[&Func];
@@ -248,40 +277,6 @@ void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M) {
         }
     }
 }
-
-#if 0
-void ProgramDependencyGraph::connectAllPossibleFunctions(
-        InstructionWrapper *CInstW, FunctionType *funcTy) {
-    std::map<const llvm::Function *, FunctionWrapper *>::iterator FI =
-            funcMap.begin();
-    std::map<const llvm::Function *, FunctionWrapper *>::iterator FE =
-            funcMap.end();
-
-    for (; FI != FE; ++FI) {
-        if ((*FI).first->getFunctionType() == funcTy &&
-            (*FI).first->getName() != "main") {
-            LLVM_DEBUG(dbgs() << (*FI).first->getName() << " function pointer! \n");
-        }
-        for (list<ArgumentWrapper *>::iterator
-                     argI = funcMap[(*FI).first]->getArgWList().begin(),
-                     argE = funcMap[(*FI).first]->getArgWList().end();
-             argI != argE; ++argI) {
-
-            InstructionWrapper *formal_inW = *(*argI)->getTree(FORMAL_IN_TREE).begin();
-            InstructionWrapper *formal_outW = *(*argI)->getTree(FORMAL_OUT_TREE).begin();
-            LLVM_DEBUG(dbgs() << "Validating formal nodes:" << "\n");
-            LLVM_DEBUG(dbgs() << *instnodes.find(formal_inW) << "\n");
-            LLVM_DEBUG(dbgs() << *instnodes.find(formal_outW) << "\n");
-            if(instnodes.find(formal_inW) == instnodes.end() || instnodes.find(formal_outW) == instnodes.end()) {
-                continue;
-            }
-            // connect Function's EntryNode with formal in/out tree roots
-            PDG->addDependency(funcMap[(*FI).first]->getEntry(), *instnodes.find(formal_inW), PARAMETER);
-            PDG->addDependency(funcMap[(*FI).first]->getEntry(), *instnodes.find(formal_outW), PARAMETER);
-        }
-    }
-}
-#endif
 
 void pdg::ProgramDependencyGraph::drawFormalParameterTree(Function *func,
                                                           TreeType treeTy) {
@@ -479,6 +474,44 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
     return 0;
 }
 
+void pdg::ProgramDependencyGraph::linkTypeNodeWithGEPInst(std::list<ArgumentWrapper *>::iterator argI,
+                                                          tree<InstructionWrapper *>::iterator formal_in_TI) {
+    auto GEPList = (*argI)->getGEPList();
+    for (auto GEPInst : GEPList) {
+        int operand_num = GEPInst->getInstruction()->getNumOperands();
+        llvm::Value *last_idx = GEPInst->getInstruction()->getOperand(operand_num - 1);
+        if (llvm::ConstantInt* constInt = dyn_cast<ConstantInt>(last_idx)) {
+            // make sure type is matched
+            llvm::Type *parent_type = (*formal_in_TI)->getParentType();
+            if (!isa<GetElementPtrInst>(GEPInst->getInstruction()) || parent_type == nullptr) continue;
+            auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
+            llvm::Type *GEPResTy = GEP->getResultElementType();
+            llvm::Type *GEPSrcTy = GEP->getSourceElementType();
+            //if (GEPSrcTy->isStructTy()) {
+            //errs() << "Source Type" << GEPSrcTy->getStructName() << "\n";
+            //}
+            if (parent_type != nullptr) {
+                errs() << "Source Type" << GEPSrcTy->getTypeID() << "\n";
+                errs() << parent_type->getTypeID() << "\n\n";
+            }
+
+            llvm::Type *TreeNodeTy = (*formal_in_TI)->getFieldType();
+            // get access field id from GEP
+            int field_idx = constInt->getSExtValue();
+            // plus one. Since for struct, the 0 index is used by the parent struct type
+            //if (field_idx+1 == (*formal_in_TI)->getFieldId() && GEPResTy == TreeNodeTy && GEPSrcTy == (*formal_in_TI)->getParentType()) {
+            // parent_type must be a pointer. Since only sub fields can have parent that is not nullptr
+            if (parent_type->isPointerTy()) {
+                parent_type = parent_type->getPointerElementType();
+            }
+            bool match = GEPSrcTy == parent_type;
+            if (field_idx+1 == (*formal_in_TI)->getFieldId() && GEPResTy == TreeNodeTy && match) {
+                PDG->addDependency(*instnodes.find(*formal_in_TI), GEPInst, STRUCT_FIELDS);
+            }
+        }
+    }
+}
+
 void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(llvm::Function *callee) {
 
     for (list<ArgumentWrapper *>::iterator
@@ -489,22 +522,13 @@ void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(llvm::Function *
         InstructionWrapper *formal_inW = *(*argI)->getTree(FORMAL_IN_TREE).begin();
         InstructionWrapper *formal_outW = *(*argI)->getTree(FORMAL_OUT_TREE).begin();
 
-        //   errs() << "formal_in_tree.size = " <<
-        //   (*argI)->getTree(FORMAL_IN_TREE).size() << "\n";
-        // errs() << "formal_out_tree.size = " <<
-        // (*argI)->getTree(FORMAL_OUT_TREE).size() << "\n";
-
         // connect Function's EntryNode with formal in/out tree roots
         PDG->addDependency(funcMap[callee]->getEntry(), *instnodes.find(formal_inW),
                            PARAMETER);
         PDG->addDependency(funcMap[callee]->getEntry(),
                            *instnodes.find(formal_outW), PARAMETER);
 
-        // TODO: connect corresponding instructions with internal formal tree
-        // nodes
-
-        // two things: (1) formal-in --> callee's Store; (2) callee's Load -->
-        // formal-out
+        // two things: (1) formal-in --> callee's Store; (2) callee's Load --> formal-out
         for (tree<InstructionWrapper *>::iterator
                      formal_in_TI = (*argI)->getTree(FORMAL_IN_TREE).begin(),
                      formal_in_TE = (*argI)->getTree(FORMAL_IN_TREE).end(),
@@ -524,41 +548,7 @@ void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(llvm::Function *
 
             if ((*formal_in_TI)->getFieldType() != nullptr) {
                 // link specific field with GEP if there is any
-                auto GEPList = (*argI)->getGEPList();
-                for (auto GEPInst : GEPList) {
-                    int operand_num = GEPInst->getInstruction()->getNumOperands();
-                    llvm::Value *last_idx = GEPInst->getInstruction()->getOperand(operand_num - 1);
-                    if (llvm::ConstantInt* constInt = dyn_cast<ConstantInt>(last_idx)) {
-                        // make sure type is matched
-                        llvm::Type *parent_type = (*formal_in_TI)->getParentType();
-                        if (!isa<GetElementPtrInst>(GEPInst->getInstruction()) || parent_type == nullptr) continue;
-                        auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
-                        llvm::Type *GEPResTy = GEP->getResultElementType();
-                        llvm::Type *GEPSrcTy = GEP->getSourceElementType();
-                        //if (GEPSrcTy->isStructTy()) {
-                            //errs() << "Source Type" << GEPSrcTy->getStructName() << "\n";
-                        //}
-                        if (parent_type != nullptr) {
-                            errs() << "Source Type" << GEPSrcTy->getTypeID() << "\n";
-                            errs() << parent_type->getTypeID() << "\n\n";
-                        }
-
-                        llvm::Type *TreeNodeTy = (*formal_in_TI)->getFieldType();
-                        // get access field id from GEP
-                        int field_idx = constInt->getSExtValue();
-                        // plus one. Since for struct, the 0 index is used by the parent struct type
-                        //if (field_idx+1 == (*formal_in_TI)->getFieldId() && GEPResTy == TreeNodeTy && GEPSrcTy == (*formal_in_TI)->getParentType()) {
-                        // parent_type must be a pointer. Since only sub fields can have parent that is not nullptr
-                        if (parent_type->isPointerTy()) {
-                            parent_type = parent_type->getPointerElementType();
-                        }
-                        bool match = GEPSrcTy == parent_type;
-                        if (field_idx+1 == (*formal_in_TI)->getFieldId() && GEPResTy == TreeNodeTy && match) {
-                            PDG->addDependency(*instnodes.find(*formal_in_TI), GEPInst, STRUCT_FIELDS);
-                        }
-                    }
-                }
-
+                linkTypeNodeWithGEPInst(argI, formal_in_TI);
                 // connect formal-in-tree type nodes with storeinst in call_func
                 for (auto userIter = (*argI)->getArg()->user_begin();
                      userIter != (*argI)->getArg()->user_end(); ++userIter)  {
@@ -578,7 +568,7 @@ void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(llvm::Function *
             }
 
             //      errs() << "DEBUG 214\n";
-            if ((*formal_out_TI)->getFieldType() == nullptr) {
+            if ((*formal_out_TI)->getFieldType() != nullptr) {
 
                 std::list<LoadInst *>::iterator LI =
                         funcMap[callee]->getLoadInstList().begin();
@@ -636,8 +626,6 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
         // find all global pointer values and insert them into a list
         if (globalW->getValue()->getType()->getContainedType(0)->isPointerTy()) {
-            // errs() << " Pointer global value found! : " << *(globalW->getValue())
-            // << "\n";
             gp_list.push_back(globalW);
         }
     }
