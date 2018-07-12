@@ -616,7 +616,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
     DEBUG(dbgs() << "ProgramDependencyGraph::runOnModule" << '\n');
 
-    constructFuncMap(M, funcMap);
+    constructFuncMap(M);
 
     for (auto &func : funcMap) {
         DEBUG(dbgs() << func.first->getName() << "\n");

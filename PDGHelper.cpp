@@ -29,50 +29,7 @@ void pdg::constructInstMap(llvm::Function &F) {
         }
 }
 
-#if 0
-void pdg::constructStructMap(llvm::Module &M,
-                             llvm::Instruction *pInstruction,
-                             std::map<llvm::AllocaInst *, std::pair<StructType *, std::vector<Type *>>> &alloca_struct_map)
-{
-        AllocaInst *allocaInst = dyn_cast<AllocaInst>(pInstruction);
-        // constructing struct
-        std::vector<llvm::StructType *> global_struct_list = M.getIdentifiedStructTypes();
-        for (auto st : global_struct_list) {
-            DEBUG(dbgs() << "Struct Name:" << st->getName().str().substr(7) << "\n");
-            llvm::StringRef structName = "";
-            if (allocaInst->getAllocatedType()->isPointerTy()) {
-                PointerType *pt = dyn_cast<PointerType>(allocaInst->getAllocatedType());
-                structName = pt->getElementType()->getStructName();
-            } else {
-                structName = allocaInst->getAllocatedType()->getStructName();
-            }
-
-            if (structName == st->getName()) {
-                std::vector<Type *> fields;
-                std::pair<StructType *, std::vector<Type *>> struct_pair;
-
-                StructType::element_iterator SB = st->element_begin();
-                StructType::element_iterator SE = st->element_end();
-                while (SB != SE) {
-                    // get the type for each field
-                    auto type = *SB;
-                    // add each field to vector
-                    fields.push_back(type);
-                    SB++;
-                }
-                // store the vector with corresponding in the map
-                //structMap[st] = fields;
-                struct_pair.first = st;
-                struct_pair.second = fields;
-                alloca_struct_map[allocaInst] = struct_pair;
-            }
-        }
-//        errs() << "Construct struct map success !" << "\n";
-//        errs() << "Struct Map size: " << alloca_struct_map.size() << "\n";
-}
-#endif
-
-void pdg::constructFuncMap(Module &M, std::map<const Function *, FunctionWrapper *> &funcMap) {
+void pdg::constructFuncMap(Module &M) {
         for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
             Function *f = dyn_cast<Function>(F);
             constructInstMap(*f);
