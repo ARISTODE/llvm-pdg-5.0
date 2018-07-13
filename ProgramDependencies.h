@@ -15,10 +15,8 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/ValueSymbolTable.h"
 
-#include <map>
-#include <set>
 #include <vector>
-#include <deque>
+#include <queue>
 #include <list>
 #include <iostream>
 #include <string.h>
@@ -69,7 +67,7 @@ namespace pdg {
 
         int connectCallerAndCallee(InstructionWrapper *CInstW, llvm::Function *callee);
 
-        void printArgUseInfo(llvm::Module &M);
+        void printArgUseInfo(llvm::Module &M, std::set<std::string> funcNameList);
 
         void collectGlobalInstList();
 

@@ -64,20 +64,7 @@ namespace {
         // do main work here
         bool runOnModule(Module &M) {
             pdg::ProgramDependencyGraph &pdggraph = getAnalysis<pdg::ProgramDependencyGraph>();
-        }
-
-        void getArgDependencies(Function &F, pdg::ProgramDependencyGraph &pdggraph) {
-//            std::map<const Function*, pdg::FunctionWrapper *> func_map = pdggraph.getFuncMap();
-//            std::map<const Instruction*, pdg::InstructionWrapper*> instMap = pdggraph.getInstMap();
-//
-//            for (std::map<const Function*, pdg::FunctionWrapper *>::iterator it = func_map.begin();
-//                 it != func_map.end(); ++it) {
-//                errs() << "Function Name: " << it->first->getName() << "\n";
-//            }
-        }
-
-        void recursiveQuery(pdg::InstructionWrapper *InstW, pdg::ProgramDependencyGraph &pdggraph) {
-            pdggraph.PDG->printDependencies(InstW);
+            pdggraph.printArgUseInfo(M, imported_functions);
         }
 
         // Analysis Usage, specify PDG at this time

@@ -8,9 +8,6 @@ std::set<InstructionWrapper *> pdg::instnodes;
 std::set<InstructionWrapper *> pdg::globalList;
 std::map<const Instruction *, InstructionWrapper *> pdg::instMap;
 std::map<const Function *, std::set<InstructionWrapper *>> pdg::funcInstWList;
-//std::map<AllocaInst*, std::pair<StructType*, std::vector<Type*>>> pdg::alloca_struct_map;
-//std::map<std::string, std::vector<std::string>> pdg::struct_fields_map;
-//std::map<AllocaInst*, int> pdg::seen_structs;
 
 void pdg::constructInstMap(llvm::Function &F) {
         for (llvm::inst_iterator I = inst_begin(F), IE = inst_end(F); I != IE; ++I) {
@@ -39,5 +36,14 @@ void pdg::constructFuncMap(Module &M) {
                 funcMap[f] = fw;
             }
         }
+}
+
+void pdg::cleanupGlobalVars() {
+    funcMap.clear();
+    callMap.clear();
+    instnodes.clear();
+    globalList.clear();
+    instMap.clear();
+    funcInstWList.clear();
 }
 
