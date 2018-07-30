@@ -11,15 +11,11 @@ namespace llvm {
         std::string getNodeLabel(pdg::DepGraphNode *Node, pdg::DepGraphNode *Graph){
             using namespace pdg;
             const InstructionWrapper *instW = Node->getData();
-//TODO: why nullptr for Node->getData()?
+
             if(instW == nullptr || instW == NULL){
                 errs() <<"instW " << instW << "\n";
                 return "null instW";
             }
-//            if (instW->getInstruction()) {
-//                instW->getInstruction()->print(errs());
-//            }
-//            errs() << "\n";
 
             std::string Str;
             raw_string_ostream OS(Str);
@@ -139,7 +135,8 @@ namespace llvm {
                 std::string Str;
                 raw_string_ostream OS(Str);
                 OS << *inst;
-                return OS.str();}
+                return OS.str();
+            }
         }
     };
 
@@ -153,6 +150,7 @@ namespace llvm {
             return DOTGraphTraits<pdg::DepGraphNode *>::getNodeLabel(
                     Node, *(Graph->begin_children()));
         }
+
     };
 
     // data dependency graph
@@ -301,9 +299,64 @@ namespace llvm {
                 }
                 default:
                     return "style=dotted,label=\"{UNDEFINED}\"";
-            }          // end switch
-            //return ""; // default ret statement
-        }            // end getEdgeAttr...
+            }
+        }
+
+        std::string getNodeAttributes(pdg::DepGraphNode *Node, pdg::ProgramDependencyGraph *Graph) {
+            using namespace pdg;
+            const InstructionWrapper *instW = Node->getData();
+
+            if(instW == nullptr || instW == NULL){
+                errs() <<"instW " << instW << "\n";
+                return "null instW";
+            }
+
+            switch(instW->getType()) {
+                case ENTRY:
+                    return "";
+
+                case GLOBAL_VALUE:{
+                    return "";
+                }
+
+                case FORMAL_IN:{
+                    return "color=\"blue\"";
+                }
+
+                case ACTUAL_IN:{
+                    return "color=\"blue\"";
+                }
+                case FORMAL_OUT:{
+                    return "color=\"blue\"";
+                }
+
+                case ACTUAL_OUT:{
+                    return "color=\"blue\"";
+                }
+
+                case PARAMETER_FIELD:{
+                    return "color=\"blue\"";
+                }
+
+                    //for pointer node, add a "*" sign before real node content
+                    //if multi level pointer, use a loop instead here
+                case POINTER_RW:{
+                    return "color=\"red\"";
+                }
+
+                case STRUCT_FIELD: {
+                    return "";
+                }
+
+                default: {
+                    return "";
+                }
+            }
+        }
+
+        std::string getGraphProperties(pdg::ProgramDependencyGraph *Graph) {
+            return "graph [ splines=true ]";
+        }
     };
 
 } // namespace llvm

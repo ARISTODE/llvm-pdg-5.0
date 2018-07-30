@@ -307,14 +307,16 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
     // callInst in caller --> Entry Node in callee
     PDG->addDependency(InstW, funcMap[callee]->getEntry(), CONTROL);
 
+
+    Function *caller = InstW->getInstruction()->getFunction();
     // ReturnInst in callee --> CallInst in caller
     for (std::list<Instruction *>::iterator
                  RI = funcMap[callee]->getReturnInstList().begin(),
                  RE = funcMap[callee]->getReturnInstList().end();
          RI != RE; ++RI) {
 
-        for (std::set<InstructionWrapper *>::iterator nodeIt = instnodes.begin();
-             nodeIt != instnodes.end(); ++nodeIt) {
+        for (std::set<InstructionWrapper *>::iterator nodeIt = funcInstWList[caller].begin();
+                nodeIt != funcInstWList[caller].end(); ++nodeIt) {
             if ((*nodeIt)->getInstruction() == (*RI)) {
                 if (nullptr != dyn_cast<ReturnInst>((*nodeIt)->getInstruction())->getReturnValue())
                     PDG->addDependency(*instnodes.find(*nodeIt), InstW, DATA_GENERAL);
@@ -410,13 +412,12 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
 
                 for (; LI != LE; ++LI) {
                     if ((*actual_out_TI)->getFieldType() == (*LI)->getType()) {
-                        for (std::set<InstructionWrapper *>::iterator nodeIt =
-                                instnodes.begin();
-                             nodeIt != instnodes.end(); ++nodeIt) {
-
-                            if ((*nodeIt)->getInstruction() == dyn_cast<Instruction>(*LI))
+                        std::set<InstructionWrapper *>::iterator nodeItB = funcInstWList[callee].begin();
+                        std::set<InstructionWrapper *>::iterator nodeItE = funcInstWList[callee].begin();
+                        for (; nodeItB != nodeItE; ++nodeItB) {
+                            if ((*nodeItB)->getInstruction() == dyn_cast<Instruction>(*LI))
                                 PDG->addDependency(*instnodes.find(*actual_out_TI),
-                                                   *instnodes.find(*nodeIt), DATA_GENERAL);
+                                                   *instnodes.find(*nodeItB), DATA_GENERAL);
                         }
                     }
                 } // end for(; LI != LE; ++LI)
@@ -523,7 +524,7 @@ void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(llvm::Function *
             }
 
             //      errs() << "DEBUG 214\n";
-            if ((*formal_out_TI)->getFieldType() != nullptr) {
+            if ((*formal_out_TI)->getFieldType() == nullptr) {
 
                 std::list<LoadInst *>::iterator LI =
                         funcMap[callee]->getLoadInstList().begin();
@@ -531,8 +532,7 @@ void pdg::ProgramDependencyGraph::connectFunctionAndFormalTrees(llvm::Function *
                         funcMap[callee]->getLoadInstList().end();
 
                 for (; LI != LE; ++LI) {
-                    if ((*formal_out_TI)->getFieldType() ==
-                        (*LI)->getPointerOperand()->getType()->getContainedType(0)) {
+                    if ((*formal_out_TI)->getFieldType() == (*LI)->getPointerOperand()->getType()->getContainedType(0)) {
                         for (std::set<InstructionWrapper *>::iterator nodeIt =
                                 instnodes.begin();
                              nodeIt != instnodes.end(); ++nodeIt) {
@@ -617,7 +617,6 @@ bool pdg::ProgramDependencyGraph::processingCallInst(InstructionWrapper *instW) 
             if (callee->getIntrinsicID() == Intrinsic::var_annotation) {
                 Value *v = CI->getArgOperand(0);
                 DEBUG(dbgs() << "Intrinsic var_annotation: " << *v << "\n");
-
                 if (isa<BitCastInst>(v)) {
                     Instruction *tempI = dyn_cast<Instruction>(v);
                     DEBUG(dbgs() << "******** BitInst opcode: " << *tempI << "BitCast \n");
@@ -637,14 +636,19 @@ bool pdg::ProgramDependencyGraph::processingCallInst(InstructionWrapper *instW) 
         // special cases done, common function
         CallWrapper *callW = new CallWrapper(CI);
         callMap[CI] = callW;
-
         if (!callee->isDeclaration()) {
             if (!callee->arg_empty()) {
                 if (funcMap[callee]->hasTrees() != true) {
+                    errs() << "Buiding parameter tree" << "\n";
+                    auto t1 = std::chrono::high_resolution_clock::now();
                     buildFormalParameterTrees(callee);
+                    auto t2 = std::chrono::high_resolution_clock::now();
+                    auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+                    errs() << "Adding dependency time: " << int_ms.count() << "\n";
                     drawFormalParameterTree(callee, FORMAL_IN_TREE);
                     drawFormalParameterTree(callee, FORMAL_OUT_TREE);
                     connectFunctionAndFormalTrees(callee);
+                    funcMap[callee]->setTreeFlag(true);
                 }
                 buildActualParameterTrees(CI);
                 drawActualParameterTree(CI, ACTUAL_IN_TREE);
@@ -671,35 +675,27 @@ bool pdg::ProgramDependencyGraph::processingCallInst(InstructionWrapper *instW) 
     return true;
 }
 
-bool pdg::ProgramDependencyGraph::addNodeDependencies(InstructionWrapper *instW1, InstructionWrapper *instW2) {
-    if (instW1 == instW2) {
-        return false;
-    }
-    // process all globals see whether dependency exists
-    if (instW2->getType() == INST && isa<LoadInst>(instW2->getInstruction())) {
-        LoadInst *LI2 = dyn_cast<LoadInst>(instW2->getInstruction());
-        for (std::set<InstructionWrapper *>::const_iterator gi =
-                globalList.begin();
-             gi != globalList.end(); ++gi) {
-            if (LI2->getPointerOperand() == (*gi)->getValue()) {
-                PDG->addDependency(*gi, instW2, GLOBAL_VALUE);
-            }
-        } // end searching globalList
-    }   // end procesing load for global
-
-    if (ddg->DDG->depends(instW1, instW2)) {
-        PDG->addDependency(instW1, instW2, ddg->DDG->getDataType(instW1,instW2));
+bool pdg::ProgramDependencyGraph::addNodeDependencies(InstructionWrapper *instW1) {
+    // processing ddg nodes
+    pdg::DependencyNode<InstructionWrapper> *dataDNode = ddg->DDG->getNodeByData(instW1);
+    pdg::DependencyNode<InstructionWrapper>::DependencyLinkList dataDList = dataDNode->getDependencyList();
+    for (auto dependencyPair : dataDList) {
+        InstructionWrapper *DNode2 = const_cast<InstructionWrapper *>(dependencyPair.first->getData());
+        PDG->addDependency(instW1, DNode2, dependencyPair.second);
     }
 
-    if (nullptr != instW2->getInstruction()) {
-        if (cdg->CDG->depends(instW1, instW2)) {
-            PDG->addDependency(instW1, instW2, CONTROL);
-        }
+    // processing cdg nodes
+    pdg::DependencyNode<InstructionWrapper> *controlDNode = cdg->CDG->getNodeByData(instW1);
+    pdg::DependencyNode<InstructionWrapper>::DependencyLinkList ControlDList = controlDNode->getDependencyList();
+    for (auto dependencyPair : dataDList) {
+        InstructionWrapper *DNode2 = const_cast<InstructionWrapper *>(dependencyPair.first->getData());
+        PDG->addDependency(instW1, DNode2, CONTROL);
     }
 
+    // Control Dep entry
     if (instW1->getType() == ENTRY) {
-        if (nullptr != instW2->getInstruction() &&
-            cdg->CDG->depends(instW1, instW2)) {
+        llvm::Function *parentFunc = instW1->getFunction();
+        for (InstructionWrapper *instW2 : funcInstWList[parentFunc]) {
             PDG->addDependency(instW1, instW2, CONTROL);
         }
     }
@@ -707,53 +703,171 @@ bool pdg::ProgramDependencyGraph::addNodeDependencies(InstructionWrapper *instW1
     return true;
 }
 
+//void pdg::ProgramDependencyGraph::printSensitiveFunctions() {
+//    std::vector<InstructionWrapper*> sensitive_nodes;
+//    std::set<llvm::GlobalValue *> senGlobalSet;
+//    //std::set<llvm::Instruction *> senInstSet;
+//    std::set<llvm::Function *> async_funcs;
+//    std::deque<const InstructionWrapper*> queue;
+//    std::set<InstructionWrapper* > coloredInstSet;
+//
+//    auto global_annos = this->module->getNamedGlobal("llvm.global.annotations");
+//    if(global_annos){
+//        auto casted_array = cast<ConstantArray>(global_annos->getOperand(0));
+//        for (int i = 0; i < casted_array->getNumOperands(); i++) {
+//            auto casted_struct = cast<ConstantStruct>(casted_array->getOperand(i));
+//            if (auto sen_gv = dyn_cast<GlobalValue>(casted_struct->getOperand(0)->getOperand(0))) {
+//                auto anno = cast<ConstantDataArray>(cast<GlobalVariable>(casted_struct->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
+//                if (anno == "sensitive") {
+//                    errs() << "sensitive global found! value = " << *sen_gv << "\n";
+//                    senGlobalSet.insert(sen_gv);
+//                }
+//            }
+//
+//            if (auto fn = dyn_cast<Function>(casted_struct->getOperand(0)->getOperand(0))) {
+//                auto anno = cast<ConstantDataArray>(cast<GlobalVariable>(casted_struct->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
+//                if (anno == "sensitive") {
+//                    async_funcs.insert(fn);
+//                    errs() << "async_funcs ++ sensitive " << fn->getName() << "\n";
+//                }
+//            }
+//        }
+//    }
+//
+//    for(std::set<InstructionWrapper*>::iterator nodeIt = instnodes.begin(); nodeIt != instnodes.end(); ++nodeIt){
+//        InstructionWrapper *InstW = *nodeIt;
+//        llvm::Instruction *pInstruction = InstW->getInstruction();
+//
+//        for(int i = 0; i < sensitive_values.size(); i++){
+//            if(sensitive_values[i] == pInstruction){
+//                errs() << "sensitive_values " << i << " == "<< *pInstruction << "\n";
+//                sensitive_nodes.push_back(InstW);
+//            }
+//        }
+//
+//        if(InstW->getType() == GLOBAL_VALUE){
+//            GlobalValue *gv = dyn_cast<GlobalValue>(InstW->getValue());
+//            if(senGlobalSet.end() != senGlobalSet.find(gv)){
+//                errs() << "sensitive_global: " << *gv <<"\n";
+//                sensitive_nodes.push_back(InstW);
+//            }
+//        }
+//    }
+//
+//    for(int i = 0; i < sensitive_nodes.size(); i++){
+//        queue.push_back(sensitive_nodes[i]);
+//    }
+//
+//    errs() << "queue.size = " << queue.size() << "\n";
+//
+//    while(!queue.empty()){
+//        InstructionWrapper *InstW = const_cast<InstructionWrapper*>(queue.front());
+//        if(InstW->getType() == INST){
+//            funcMap[InstW->getFunction()]->setVisited(true);
+//        }
+//        queue.pop_front();
+//
+//        if(InstW->getValue() != nullptr) {
+//            coloredInstSet.insert(InstW);
+//        }
+//
+//        DependencyNode<InstructionWrapper>* DNode = PDG->getNodeByData(InstW);
+//        for(int i = 0; i < DNode->getDependencyList().size(); i++){
+//            if(nullptr != DNode->getDependencyList()[i].first->getData()){
+//                InstructionWrapper *adjacent_InstW = *instnodes.find(const_cast<InstructionWrapper*>(DNode->getDependencyList()[i].first->getData()));
+//                if(true != adjacent_InstW->getFlag()){
+//                    queue.push_back(DNode->getDependencyList()[i].first->getData());
+//                    adjacent_InstW->setFlag(true); //label the adjacent node visited
+//                }
+//            }
+//        }
+//    }
+//
+//    errs() << "\n\n++++++++++The FUNCTION List is as follows:++++++++++\n\n";
+//
+//    unsigned int funcs_count = 0;
+//    unsigned int sen_funcs_count = 0;
+//    unsigned int ins_funcs_count = 0;
+//
+//    std::set<FunctionWrapper*> sen_FuncSet;
+//    std::set<FunctionWrapper*> ins_FuncSet;
+//
+//    std::map<const llvm::Function *, FunctionWrapper *>::iterator FI =
+//            funcMap.begin();
+//    std::map<const llvm::Function *, FunctionWrapper *>::iterator FE =
+//            funcMap.end();
+//    for (; FI != FE; ++FI) {
+//        if (!(*FI).first->isDeclaration()) {
+//            funcs_count++;
+////            if ((*FI).second->hasFuncOrFilePtr()) {
+////                errs() << (*FI).first->getName() << " hasFuncOrFilePtr()\n";
+////            }
+//
+//            if ((*FI).second->isVisited()) {
+//                errs() << (*FI).first->getName() << " is colored(sensitive)\n";
+//
+//                Function* func = (*FI).second->getFunction();
+//                errs() << "func name = " << func->getName() << "\n";
+//
+//                sen_FuncSet.insert((*FI).second);
+//            } else {
+//                errs() << (*FI).first->getName() << " is uncolored\n";
+//                ins_FuncSet.insert((*FI).second);
+//            }
+//        }
+//    }
+//}
+
 bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
     std::set<std::string> funcList = {
-            "___might_sleep",
-            "__alloc_percpu",
-            "__rtnl_link_register",
-            "__rtnl_link_unregister",
-            "_cond_resched",
-            "alloc_netdev_mqs",
-            "consume_skb",
-            "dummy_change_carrier",
-            "dummy_cleanup_module",
-            "dummy_dev_init",
-            "dummy_dev_uninit",
-            "dummy_get_drvinfo",
-            "dummy_get_stats64",
-            "dummy_init_module",
-            "dummy_init_one",
-            "dummy_setup",
-            "dummy_validate",
-            "dummy_xmit",
-            "eth_hw_addr_random",
-            "eth_mac_addr",
-            "eth_random_addr",
-            "eth_validate_addr",
-            "ether_setup",
-            "free_netdev",
-            "free_percpu",
-            "get_random_bytes",
-            "is_multicast_ether_addr",
-            "is_valid_ether_addr",
-            "is_zero_ether_addr",
-            "llvm.dbg.declare",
-            "netif_carrier_off",
-            "netif_carrier_on",
-            "nla_data",
-            "nla_len",
-            "register_netdevice",
-            "rtnl_link_unregister",
-            "rtnl_lock",
-            "rtnl_unlock",
-            "set_multicast_list",
-            "strlcpy",
-            "u64_stats_fetch_begin_irq",
-            "u64_stats_fetch_retry_irq",
-            "u64_stats_update_begin",
-            "u64_stats_update_end"
+            "sha1_process_block"
     };
+//    std::set<std::string> funcList = {
+//            "___might_sleep",
+//            "__alloc_percpu",
+//            "__rtnl_link_register",
+//            "__rtnl_link_unregister",
+//            "_cond_resched",
+//            "alloc_netdev_mqs",
+//            "consume_skb",
+//            "dummy_change_carrier",
+//            "dummy_cleanup_module",
+//            "dummy_dev_init",
+//            "dummy_dev_uninit",
+//            "dummy_get_drvinfo",
+//            "dummy_get_stats64",
+//            "dummy_init_module",
+//            "dummy_init_one",
+//            "dummy_setup",
+//            "dummy_validate",
+//            "dummy_xmit",
+//            "eth_hw_addr_random",
+//            "eth_mac_addr",
+//            "eth_random_addr",
+//            "eth_validate_addr",
+//            "ether_setup",
+//            "free_netdev",
+//            "free_percpu",
+//            "get_random_bytes",
+//            "is_multicast_ether_addr",
+//            "is_valid_ether_addr",
+//            "is_zero_ether_addr",
+//            "llvm.dbg.declare",
+//            "netif_carrier_off",
+//            "netif_carrier_on",
+//            "nla_data",
+//            "nla_len",
+//            "register_netdevice",
+//            "rtnl_link_unregister",
+//            "rtnl_lock",
+//            "rtnl_unlock",
+//            "set_multicast_list",
+//            "strlcpy",
+//            "u64_stats_fetch_begin_irq",
+//            "u64_stats_fetch_retry_irq",
+//            "u64_stats_update_begin",
+//            "u64_stats_update_end"
+//    };
 
     DEBUG(dbgs() << "ProgramDependencyGraph::runOnModule" << '\n');
     module = &M;
@@ -762,15 +876,15 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
         DEBUG(dbgs() << func.first->getName() << "\n");
     }
     collectGlobalInstList();
-
+    auto t1 = std::chrono::high_resolution_clock::now();
     int funcs = 0;
     // process a module function by function
     for (Module::iterator FF = M.begin(), E = M.end(); FF != E; ++FF) {
         DEBUG(dbgs() << "Module Size: " << M.size() << "\n");
         Function *F = dyn_cast<Function>(FF);
-        if (funcList.find(F->getName()) == funcList.end()) {
-            continue;
-        }
+//        if (funcList.find(F->getName()) == funcList.end()) {
+//            continue;
+//        }
         if ((*F).isDeclaration()) {
             DEBUG(dbgs() << (*F).getName() << " is defined outside!" << "\n");
             continue;
@@ -782,6 +896,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                      << "% completed\n");
 
         categorizeInstInFunc(F);
+
         cdg = &getAnalysis<ControlDependencyGraph>(*F);
         ddg = &getAnalysis<DataDependencyGraph>(*F);
 
@@ -796,22 +911,31 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                 continue;
             }
 
+            if (!addNodeDependencies(instW1)) {
+                continue;
+            }
+//            t1 = std::chrono::high_resolution_clock::now();
             // second iteration on nodes to add both control and data Dependency
-            for (std::set<InstructionWrapper *>::iterator nodeIt2 = funcInstWList[F].begin();
-                 nodeIt2 != funcInstWList[F].end(); ++nodeIt2) {
-                InstructionWrapper *instW2 = *nodeIt2;
-                if (!addNodeDependencies(instW1, instW2)) {
-                    continue;
-                }
-            } // end second iteration for PDG->addDependency...
+            //pdg::DependencyNode<InstructionWrapper> *DNode = PDG->getNodeByData(instW1);
+//            for (std::set<InstructionWrapper *>::iterator nodeIt2 = funcInstWList[F].begin();
+//                 nodeIt2 != funcInstWList[F].end(); ++nodeIt2) {
+//                InstructionWrapper *instW2 = *nodeIt2;
+//                if (!addNodeDependencies(instW1, instW2)) {
+//                    continue;
+//                }
+//            } // end second iteration for PDG->addDependency...
+
         }   // end the iteration for finding CallInst
     } // end for(Module...
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+    errs() << "Adding dependency time: " << int_ms.count() << "\n";
 
     DEBUG(dbgs() << "\n\n PDG construction completed! ^_^\n\n");
     DEBUG(dbgs() << "funcs = " << funcs << "\n");
     DEBUG(dbgs() << "+++++++++++++++++++++++++++++++++++++++++++++\n");
 
-    //printArgUseInfo(M);
+    //printSensitiveFunctions();
     printArgUseInfo(M, funcList);
     cleanupGlobalVars();
     return false;
@@ -819,9 +943,9 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
 
 void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M, std::set<std::string> funcNameList) {
     for (llvm::Function &func : M) {
-        if (funcNameList.find(func.getName()) == funcNameList.end()) {
-            continue;
-        }
+//        if (funcNameList.find(func.getName()) == funcNameList.end()) {
+//            continue;
+//        }
         errs() << "\n --------------------------- \n";
         errs() << "Function Name:" << func.getName() << "\n";
         auto arg_list = funcMap[&func]->getArgWList();
