@@ -60,7 +60,6 @@ int pdg::ProgramDependencyGraph::buildFormalTypeTree(Argument *arg, TypeWrapper 
     }
 
     //kinds of complex processing happen when pointers come(recursion, FILE*, )...
-    tree<InstructionWrapper*>::iterator insert_loc;
     ArgumentWrapper *pArgW = getArgWrapperFromFunction(funcMap[arg->getParent()], arg);
 
     if(pArgW == nullptr){
@@ -72,6 +71,7 @@ int pdg::ProgramDependencyGraph::buildFormalTypeTree(Argument *arg, TypeWrapper 
     std::queue<TypeWrapper *> worklist;
     worklist.push(tyW);
 
+    tree<InstructionWrapper*>::iterator insert_loc;
     while (!worklist.empty()) {
         TypeWrapper *curTyNode = worklist.front();
         worklist.pop();
@@ -100,6 +100,7 @@ int pdg::ProgramDependencyGraph::buildFormalTypeTree(Argument *arg, TypeWrapper 
         for(unsigned int i = 0; i < curTyNode->getType()->getContainedType(0)->getNumContainedTypes(); i++) {
             TypeWrapper *tempTyW = new TypeWrapper(curTyNode->getType()->getContainedType(0)->getContainedType(i), field_pos);
             parent_type = curTyNode->getType();
+            errs() << "field id: " << field_pos << "\n";
             // build a new instWrapper for each single argument and then insert the inst to instnodes.
             InstructionWrapper *typeFieldW = new InstructionWrapper(arg->getParent(), arg, tempTyW->getType(), parent_type, field_pos++, PARAMETER_FIELD);
             instnodes.insert(typeFieldW);
@@ -149,6 +150,7 @@ int pdg::ProgramDependencyGraph::buildFormalTypeTree(Argument *arg, TypeWrapper 
             //return buildFormalTypeTree(arg, tempTyW, treeTy, 1);
             worklist.push(tempTyW);
         }
+        field_pos = 0;
     }
 
     return SUCCEED;
@@ -967,8 +969,32 @@ void pdg::ProgramDependencyGraph::printArgUseInfo(llvm::Module &M, std::set<std:
                     parentFieldId = (*parentIter)->getFieldId();
                 }
 
-                errs() << "Relative position to parent: " << curTyNode->getFieldId() << "\n";
-                errs() << "Node Type: " << curTyNode->getFieldType()->getTypeID() - parentFieldId<< "\n";
+                llvm::Type *curNodeTy = curTyNode->getFieldType();
+                if (curNodeTy->isStructTy() || curNodeTy->isPointerTy()) {
+                    DataLayout DL = M.getDataLayout();
+
+                    PointerType *pt = dyn_cast<PointerType>(curNodeTy);
+                    if (curNodeTy->isPointerTy() ) {
+                        if (!pt->getElementType()->isStructTy()) {
+                            continue;
+                        }
+                    }
+
+                    StructType *st = nullptr;
+                    if (curNodeTy->isPointerTy()) {
+                        st = dyn_cast<StructType>(pt->getElementType());
+                    } else {
+                        st = dyn_cast<StructType>(curNodeTy);
+                    }
+
+                    const StructLayout *StL = DL.getStructLayout(st);
+                    errs() << "Field ID: " << curTyNode->getFieldId() << "\n";
+                    errs() << "Element Offset: " << StL->getElementOffset(1) << "\n";
+                }
+
+                errs() << "Relative position to parent: " << curTyNode->getFieldType()->getTypeID() - parentFieldId << "\n";
+                //errs() << "Node Type: " << curTyNode->getFieldType()->getTypeID() - parentFieldId<< "\n";
+                errs() << "Node Type: " << curTyNode->getFieldId() << "\n";
             }
         }
     }

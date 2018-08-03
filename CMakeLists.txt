@@ -10,6 +10,7 @@ add_llvm_loadable_module( LLVMCDG
     FunctionWrapper.cpp
     DepPrinter.cpp
     idl_gen.cpp
+    DSAGenerator.cpp
     DEPENDS
     intrinsics_gen
     PLUGIN_TOOL
