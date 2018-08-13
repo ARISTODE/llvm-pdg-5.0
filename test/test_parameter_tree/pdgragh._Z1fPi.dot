@@ -1,5 +1,5 @@
-digraph "Program Dependency Graph for 'main' function" {
-	label="Program Dependency Graph for 'main' function";
+digraph "Program Dependency Graph for '_Z1fPi' function" {
+	label="Program Dependency Graph for '_Z1fPi' function";
 graph [ splines=true ]
 	Node0x8e8b690 [shape=record,label="{GLOBAL_VALUE:@a = global i32 4, align 4}"];
 	Node0x8e8b690 -> Node0x8e8b960[style=dotted];

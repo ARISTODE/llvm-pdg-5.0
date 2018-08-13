@@ -6,7 +6,7 @@ target triple = "x86_64-unknown-linux-gnu"
 %struct.clothes = type { [10 x i8], i32 }
 %struct.person_t = type { i32, [10 x i8], %struct.clothes* }
 
-@.str = private unnamed_addr constant [24 x i8] c"%s is wearing %s today.\00", align 1
+@.str = private unnamed_addr constant [25 x i8] c"%s is wearing red today.\00", align 1
 @main.c = private unnamed_addr constant %struct.clothes { [10 x i8] c"red\00\00\00\00\00\00\00", i32 5 }, align 4
 @.str.1 = private unnamed_addr constant [10 x i8] c"Jack\00\00\00\00\00\00", align 1
 
@@ -15,21 +15,13 @@ define void @f(%struct.person_t* %p1) #0 {
 entry:
   %p1.addr = alloca %struct.person_t*, align 8
   %name = alloca i8*, align 8
-  %color = alloca i8*, align 8
   store %struct.person_t* %p1, %struct.person_t** %p1.addr, align 8
   %0 = load %struct.person_t*, %struct.person_t** %p1.addr, align 8
   %name1 = getelementptr inbounds %struct.person_t, %struct.person_t* %0, i32 0, i32 1
   %arraydecay = getelementptr inbounds [10 x i8], [10 x i8]* %name1, i32 0, i32 0
   store i8* %arraydecay, i8** %name, align 8
-  %1 = load %struct.person_t*, %struct.person_t** %p1.addr, align 8
-  %s = getelementptr inbounds %struct.person_t, %struct.person_t* %1, i32 0, i32 2
-  %2 = load %struct.clothes*, %struct.clothes** %s, align 8
-  %color2 = getelementptr inbounds %struct.clothes, %struct.clothes* %2, i32 0, i32 0
-  %arraydecay3 = getelementptr inbounds [10 x i8], [10 x i8]* %color2, i32 0, i32 0
-  store i8* %arraydecay3, i8** %color, align 8
-  %3 = load i8*, i8** %name, align 8
-  %4 = load i8*, i8** %color, align 8
-  %call = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([24 x i8], [24 x i8]* @.str, i32 0, i32 0), i8* %3, i8* %4)
+  %1 = load i8*, i8** %name, align 8
+  %call = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([25 x i8], [25 x i8]* @.str, i32 0, i32 0), i8* %1)
   ret void
 }
 

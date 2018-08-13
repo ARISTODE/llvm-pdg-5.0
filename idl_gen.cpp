@@ -1,3 +1,6 @@
+#ifndef DSAGENERATOR_H
+#define DSAGENERATOR_H
+
 #include "ProgramDependencies.h"
 
 #include "llvm/Support/raw_ostream.h"
@@ -80,3 +83,5 @@ namespace {
     char IdlGenerator::ID = 0;
     static RegisterPass<IdlGenerator> IdlGenerator("idl-gen", "IDL generation for kernel", false, true);
 }
+
+#endif

@@ -48,13 +48,15 @@ namespace pdg {
 
         void insertArgToTree(TypeWrapper *tyW, ArgumentWrapper *pArgW, TreeType treeTy, tree<InstructionWrapper*>::iterator insertLoc);
 
-        int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy, int field_pos);
+        int buildFormalTypeTree(Argument *arg, TypeWrapper *tyW, TreeType treeTy, int field_pos );
 
         void buildFormalTree(Argument *arg, TreeType treeTy, int field_pos);
 
         void buildFormalParameterTrees(Function *callee);
 
         void buildActualParameterTrees(CallInst *CI);
+
+        void buildActualParameterTreesForIndirectCall(CallInst *CI);
 
         void drawFormalParameterTree(Function *func, TreeType treeTy);
 
@@ -68,6 +70,8 @@ namespace pdg {
 
         int connectCallerAndCallee(InstructionWrapper *CInstW, llvm::Function *callee);
 
+        const StructLayout* getStructLayout(llvm::Module &M, InstructionWrapper *curTyNode);
+
         void printArgUseInfo(llvm::Module &M, std::set<std::string> funcNameList);
 
         void collectGlobalInstList();
@@ -76,11 +80,15 @@ namespace pdg {
 
         bool processingCallInst(InstructionWrapper *instW);
 
-        //bool addNodeDependencies(InstructionWrapper *instW1, InstructionWrapper *instW2);
+        std::vector<llvm::Function *> collectIndirectCallCandidates(FunctionType *funcType);
+
+        void connectAllPossibleFunctions(InstructionWrapper *CInstW, FunctionType *funcTy);
+
         bool addNodeDependencies(InstructionWrapper *instW1);
 
-        //void printSensitiveFunctions();
+        bool ifFuncTypeMatch(FunctionType *funcTy, FunctionType *indirectFuncCallTy);
 
+        //void printSensitiveFunctions();
         bool runOnModule(llvm::Module &M);
 
         void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
