@@ -1,5 +1,5 @@
-digraph "Program Dependency Graph for 'main' function" {
-	label="Program Dependency Graph for 'main' function";
+digraph "Program Dependency Graph for 'fun' function" {
+	label="Program Dependency Graph for 'fun' function";
 graph [ splines=true ]
 	Node0x9044440 [shape=record,label="{  %X.addr = alloca i32*, align 8}"];
 	Node0x9044440 -> Node0x90444b0[style=dotted,label = "{DEF_USE}" ];
