@@ -134,7 +134,6 @@ namespace pdg {
       std::list<llvm::Instruction *> returnInstList;
       std::list<llvm::CallInst *> callInstList;
       std::list<ArgumentWrapper *> argWList;
-      std::map<InstructionWrapper *, bool> visitedMap;
       std::set<llvm::Value *> ptrSet;
 
       bool treeFlag = false;
@@ -181,10 +180,6 @@ namespace pdg {
       std::list<llvm::CallInst *> &getCallInstList() { return callInstList; }
 
       std::set<llvm::Value *> &getPtrSet() { return ptrSet; }
-
-      std::map<InstructionWrapper *, bool> &getVisitedMap() {
-        return visitedMap;
-      };
 
       bool hasFuncOrFilePrt();
     };

@@ -31,6 +31,7 @@ namespace pdg {
     typedef DependencyGraph<InstructionWrapper> ProgramDepGraph;
 
     class ProgramDependencyGraph : public llvm::ModulePass {
+    typedef std::map<llvm::Function *, std::map<std::string, bool>> ArgUseInfoMap;
     public:
         static char ID; // Pass ID, replacement for typeid
         ProgramDepGraph *PDG;
@@ -65,6 +66,8 @@ namespace pdg {
 
         void drawDependencyTree(Function *func);
 
+        std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> getParameterTreeNodeWithCorrespondGEP(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI);
+
         void linkTypeNodeWithGEPInst(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI);
 
         void connectFunctionAndFormalTrees(Function *callee);
@@ -91,15 +94,9 @@ namespace pdg {
         bool ifFuncTypeMatch(FunctionType *funcTy, FunctionType *indirectFuncCallTy);
 
         // --- get arg use information using worklist algorithm
-        std::map<std::string, bool> getArgUseInfoInFunc(llvm::Module &M, llvm::Function *start_func);
+        ArgUseInfoMap initializeArgUseMapForAllFuncs(llvm::Module &M);
 
-        std::map<std::string, bool> getArgUseInfoMap(llvm::Module &M, llvm::Function *func);
-
-        // bool compare_map_equality(std::map<std::string, bool> new_map, std::map<std::string, bool> old_map);
-
-        std::set<llvm::Function *> getDependentFuncList(llvm::Function *);
-
-        void update_arg_use_info(llvm::Function *func, std::map<std::string, bool> new_map);
+        std::map<std::string, bool> getArgUseInfoMap(llvm::Function &func);
 
         //void printSensitiveFunctions();
         bool runOnModule(llvm::Module &M);

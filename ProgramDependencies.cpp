@@ -220,7 +220,6 @@ void pdg::ProgramDependencyGraph::buildFormalParameterTrees(llvm::Function *call
     funcMap[callee]->setTreeFlag(true);
 }
 
-
 void pdg::ProgramDependencyGraph::buildActualParameterTrees(CallInst *CI) {
     Function *called_func;
     // processing indirect call. Pick the first candidate function and copy its' 
@@ -443,46 +442,66 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
     return 0;
 }
 
-void pdg::ProgramDependencyGraph::linkTypeNodeWithGEPInst(std::list<ArgumentWrapper *>::iterator argI,
-                                                          tree<InstructionWrapper *>::iterator formal_in_TI) {
-    // get all gep instructions
-    auto GEPList = (*argI)->getGEPList();
-    for (auto GEPInst : GEPList) {
-        // get the offset of filed in the struct
-        int operand_num = GEPInst->getInstruction()->getNumOperands();
-        llvm::Value *last_idx = GEPInst->getInstruction()->getOperand(operand_num - 1);
-        // cast the last_idx to int type
-        if (llvm::ConstantInt* constInt = dyn_cast<ConstantInt>(last_idx)) {
-            // make sure type is matched
-            llvm::Type *parent_type = (*formal_in_TI)->getParentType();
-            if (!isa<GetElementPtrInst>(GEPInst->getInstruction()) || parent_type == nullptr) continue;
-            auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
-            llvm::Type *GEPResTy = GEP->getResultElementType();
-            llvm::Type *GEPSrcTy = GEP->getSourceElementType();
-            if (parent_type != nullptr) {
-                DEBUG(dbgs() << "Source Type" << GEPSrcTy->getTypeID() << "\n");
-                DEBUG(dbgs() << parent_type->getTypeID() << "\n\n");
-                //tree<InstructionWrapper *>::iterator parentIter = tree<InstructionWrapper *>::parent(formal_in_TI);
-            }
+std::vector<std::pair<pdg::InstructionWrapper *, pdg::InstructionWrapper *>> pdg::ProgramDependencyGraph::getParameterTreeNodeWithCorrespondGEP(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI ) {
+  // get all gep instructions
+  auto GEPList = (*argI)->getGEPList();
+  std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> treeNodeWithCorrespondGEP;
+  for (auto GEPInst : GEPList) {
+    // get the offset of filed in the struct
+    int operand_num = GEPInst->getInstruction()->getNumOperands();
+    llvm::Value *last_idx =
+        GEPInst->getInstruction()->getOperand(operand_num - 1);
 
-            llvm::Type *TreeNodeTy = (*formal_in_TI)->getFieldType();
-            // get access field idx from GEP
-            int field_idx = constInt->getSExtValue();
-            // plus one. Since for struct, the 0 index is used by the parent struct type parent_type must be a pointer. Since only sub fields can have parent that is not nullptr
-            if (parent_type->isPointerTy()) {
-                parent_type = parent_type->getPointerElementType();
-            }
+    // cast the last_idx to int type
+    if (llvm::ConstantInt *constInt = dyn_cast<ConstantInt>(last_idx)) {
+      // make sure type is matched
+      llvm::Type *parent_type = (*formal_in_TI)->getParentType();
+      if (!isa<GetElementPtrInst>(GEPInst->getInstruction()) ||
+          parent_type == nullptr)
+        continue;
+      auto GEP = dyn_cast<GetElementPtrInst>(GEPInst->getInstruction());
+      llvm::Type *GEPResTy = GEP->getResultElementType();
+      llvm::Type *GEPSrcTy = GEP->getSourceElementType();
+      if (parent_type != nullptr) {
+        DEBUG(dbgs() << "Source Type" << GEPSrcTy->getTypeID() << "\n");
+        DEBUG(dbgs() << parent_type->getTypeID() << "\n\n");
+        // tree<InstructionWrapper *>::iterator parentIter =
+        // tree<InstructionWrapper *>::parent(formal_in_TI);
+      }
 
-            // check the src type in GEP inst is equal to parent_type (GET FROM)
-            bool match = GEPSrcTy == parent_type;
-            // check if the offset is equal
-            int field_offset = (*formal_in_TI)->getFieldId();
-            //if (field_idx+1 == relative_idx && GEPResTy == TreeNodeTy && match) {
-            if (field_idx == field_offset && GEPResTy == TreeNodeTy && match) {
-                PDG->addDependency(*instnodes.find(*formal_in_TI), GEPInst, STRUCT_FIELDS);
-                (*formal_in_TI)->setVisited(true);
-            }
-        }
+      llvm::Type *TreeNodeTy = (*formal_in_TI)->getFieldType();
+      // get access field idx from GEP
+      int field_idx = constInt->getSExtValue();
+      // plus one. Since for struct, the 0 index is used by the parent struct
+      // type parent_type must be a pointer. Since only sub fields can have
+      // parent that is not nullptr
+      if (parent_type->isPointerTy()) {
+        parent_type = parent_type->getPointerElementType();
+      }
+
+      // check the src type in GEP inst is equal to parent_type (GET FROM)
+      bool match = GEPSrcTy == parent_type;
+      // check if the offset is equal
+      int field_offset = (*formal_in_TI)->getFieldId();
+      // if (field_idx+1 == relative_idx && GEPResTy == TreeNodeTy && match) {
+      if (field_idx == field_offset && GEPResTy == TreeNodeTy && match) {
+        PDG->addDependency(*instnodes.find(*formal_in_TI), GEPInst,
+                           STRUCT_FIELDS);
+        (*formal_in_TI)->setVisited(true);
+        // also add this GEP to the list of GEP that directly access parameter.
+
+        treeNodeWithCorrespondGEP.push_back(std::make_pair(*instnodes.find(*formal_in_TI), GEPInst)); 
+      }
+    }
+  }
+  return treeNodeWithCorrespondGEP;
+}
+
+void pdg::ProgramDependencyGraph::linkTypeNodeWithGEPInst(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI) {
+    std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> treeNodeWithCorrespondGEP = getParameterTreeNodeWithCorrespondGEP(argI, formal_in_TI);
+    for (auto node_gep_pair : treeNodeWithCorrespondGEP) {
+        PDG->addDependency(node_gep_pair.first, node_gep_pair.second, STRUCT_FIELDS);
+        node_gep_pair.first->setVisited(true);
     }
 }
 
@@ -615,28 +634,6 @@ void pdg::ProgramDependencyGraph::connectAllPossibleFunctions( CallInst *CI, std
     for (llvm::Function *func : indirect_call_candidates) {
         connectCallerAndCallee(CInstW, func);
     }
-
-
-//   //llvm::CallInst *callInst;
-//   for (list<ArgumentWrapper *>::iterator
-//            argI = funcMap[func]->getArgWList().begin(),
-//            argE = funcMap[func]->getArgWList().end();
-//        argI != argE; ++argI) {
-
-//     InstructionWrapper *formal_inW = *(*argI)->getTree(FORMAL_IN_TREE).begin();
-//     InstructionWrapper *formal_outW = *(*argI)->getTree(FORMAL_OUT_TREE).begin();
-//     errs() << "Validating formal nodes:" << "\n";
-
-//     if (instnodes.find(formal_inW) == instnodes.end() ||
-//         instnodes.find(formal_outW) == instnodes.end()) {
-//       continue;
-//     }
-//     // connect Function's EntryNode with formal in/out tree roots
-//     PDG->addDependency(funcMap[func]->getEntry(), *instnodes.find(formal_inW),
-//                        PARAMETER);
-//     PDG->addDependency(funcMap[func]->getEntry(), *instnodes.find(formal_outW),
-//                        PARAMETER);
-//   }
 }
 
 void pdg::ProgramDependencyGraph::collectGlobalInstList() {
@@ -823,7 +820,7 @@ bool pdg::ProgramDependencyGraph::addNodeDependencies(
     PDG->addDependency(instW1, DNodeW2, dependencyPair.second);
   }
 
-  // processing cdg nodes
+  // processing cdg nodes, disable by default. 
 #if 0
     pdg::DependencyNode<InstructionWrapper> *controlDNode = cdg->CDG->getNodeByData(instW1);
     pdg::DependencyNode<InstructionWrapper>::DependencyLinkList ControlDList = controlDNode->getDependencyList();
@@ -844,149 +841,132 @@ bool pdg::ProgramDependencyGraph::addNodeDependencies(
   return true;
 }
 
-// void pdg::ProgramDependencyGraph::printSensitiveFunctions() {
-//    std::vector<InstructionWrapper*> sensitive_nodes;
-//    std::set<llvm::GlobalValue *> senGlobalSet;
-//    //std::set<llvm::Instruction *> senInstSet;
-//    std::set<llvm::Function *> async_funcs;
-//    std::deque<const InstructionWrapper*> queue;
-//    std::set<InstructionWrapper* > coloredInstSet;
-//
-//    auto global_annos =
-//    this->module->getNamedGlobal("llvm.global.annotations"); if(global_annos){
-//        auto casted_array = cast<ConstantArray>(global_annos->getOperand(0));
-//        for (int i = 0; i < casted_array->getNumOperands(); i++) {
-//            auto casted_struct =
-//            cast<ConstantStruct>(casted_array->getOperand(i)); if (auto sen_gv
-//            =
-//            dyn_cast<GlobalValue>(casted_struct->getOperand(0)->getOperand(0)))
-//            {
-//                auto anno =
-//                cast<ConstantDataArray>(cast<GlobalVariable>(casted_struct->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
-//                if (anno == "sensitive") {
-//                    errs() << "sensitive global found! value = " << *sen_gv <<
-//                    "\n"; senGlobalSet.insert(sen_gv);
-//                }
-//            }
-//bool pdg::ProgramDependencyGraph::ifFuncTypeMatch(llvm::FunctionType *funcTy, llvm::FunctionType *indirectFuncCallTy) {
-//     if (funcTy->getNumParams() != indirectFuncCallTy->getNumParams()) {
-//         return false;
-//     }
+#if 0
+void pdg::ProgramDependencyGraph::printSensitiveFunctions() {
+   std::vector<InstructionWrapper*> sensitive_nodes;
+   std::set<llvm::GlobalValue *> senGlobalSet;
+   //std::set<llvm::Instruction *> senInstSet;
+   std::set<llvm::Function *> async_funcs;
+   std::deque<const InstructionWrapper*> queue;
+   std::set<InstructionWrapper* > coloredInstSet;
 
-//     if (funcTy->getReturnType() != indirectFuncCallTy->getReturnType()) {
-//         return false;
-//     }
+   auto global_annos = this->module->getNamedGlobal("llvm.global.annotations"); 
+   if(global_annos){
+       auto casted_array = cast<ConstantArray>(global_annos->getOperand(0));
+       for (int i = 0; i < casted_array->getNumOperands(); i++) {
+           auto casted_struct =
+           cast<ConstantStruct>(casted_array->getOperand(i)); if (auto sen_gv
+           =
+           dyn_cast<GlobalValue>(casted_struct->getOperand(0)->getOperand(0)))
+           {
+               auto anno =
+               cast<ConstantDataArray>(cast<GlobalVariable>(casted_struct->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
+               if (anno == "sensitive") {
+                   errs() << "sensitive global found! value = " << *sen_gv <<
+                   "\n"; senGlobalSet.insert(sen_gv);
+               }
+           }
+           if (auto fn = dyn_cast<Function>(casted_struct->getOperand(0)->getOperand(0))) {
+               auto anno = cast<ConstantDataArray>(cast<GlobalVariable>(casted_struct->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
+               if (anno == "sensitive") {
+                   async_funcs.insert(fn);
+                   errs() << "async_funcs ++ sensitive " << fn->getName() <<
+                   "\n";
+               }
+           }
+       }
+   }
 
-//     unsigned param_len = funcTy->getNumParams();
-//     for (unsigned i = 0; i < param_len; ++i) {
-//         if (funcTy->getParamType(i) != indirectFuncCallTy->getParamType(i)) {
-//             return false;
-//         }
-//     }
+   for(std::set<InstructionWrapper*>::iterator nodeIt = instnodes.begin();
+   nodeIt != instnodes.end(); ++nodeIt){
+       InstructionWrapper *InstW = *nodeIt;
+       llvm::Instruction *pInstruction = InstW->getInstruction();
 
-//     return true;
-// }
-//            if (auto fn =
-//            dyn_cast<Function>(casted_struct->getOperand(0)->getOperand(0))) {
-//                auto anno =
-//                cast<ConstantDataArray>(cast<GlobalVariable>(casted_struct->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
-//                if (anno == "sensitive") {
-//                    async_funcs.insert(fn);
-//                    errs() << "async_funcs ++ sensitive " << fn->getName() <<
-//                    "\n";
-//                }
-//            }
-//        }
-//    }
-//
-//    for(std::set<InstructionWrapper*>::iterator nodeIt = instnodes.begin();
-//    nodeIt != instnodes.end(); ++nodeIt){
-//        InstructionWrapper *InstW = *nodeIt;
-//        llvm::Instruction *pInstruction = InstW->getInstruction();
-//
-//        for(int i = 0; i < sensitive_values.size(); i++){
-//            if(sensitive_values[i] == pInstruction){
-//                errs() << "sensitive_values " << i << " == "<< *pInstruction
-//                << "\n"; sensitive_nodes.push_back(InstW);
-//            }
-//        }
-//
-//        if(InstW->getType() == GLOBAL_VALUE){
-//            GlobalValue *gv = dyn_cast<GlobalValue>(InstW->getValue());
-//            if(senGlobalSet.end() != senGlobalSet.find(gv)){
-//                errs() << "sensitive_global: " << *gv <<"\n";
-//                sensitive_nodes.push_back(InstW);
-//            }
-//        }
-//    }
-//
-//    for(int i = 0; i < sensitive_nodes.size(); i++){
-//        queue.push_back(sensitive_nodes[i]);
-//    }
-//
-//    errs() << "queue.size = " << queue.size() << "\n";
-//
-//    while(!queue.empty()){
-//        InstructionWrapper *InstW =
-//        const_cast<InstructionWrapper*>(queue.front()); if(InstW->getType() ==
-//        INST){
-//            funcMap[InstW->getFunction()]->setVisited(true);
-//        }
-//        queue.pop_front();
-//
-//        if(InstW->getValue() != nullptr) {
-//            coloredInstSet.insert(InstW);
-//        }
-//
-//        DependencyNode<InstructionWrapper>* DNode = PDG->getNodeByData(InstW);
-//        for(int i = 0; i < DNode->getDependencyList().size(); i++){
-//            if(nullptr != DNode->getDependencyList()[i].first->getData()){
-//                InstructionWrapper *adjacent_InstW =
-//                *instnodes.find(const_cast<InstructionWrapper*>(DNode->getDependencyList()[i].first->getData()));
-//                if(true != adjacent_InstW->getFlag()){
-//                    queue.push_back(DNode->getDependencyList()[i].first->getData());
-//                    adjacent_InstW->setFlag(true); //label the adjacent node
-//                    visited
-//                }
-//            }
-//        }
-//    }
-//
-//    errs() << "\n\n++++++++++The FUNCTION List is as follows:++++++++++\n\n";
-//
-//    unsigned int funcs_count = 0;
-//    unsigned int sen_funcs_count = 0;
-//    unsigned int ins_funcs_count = 0;
-//
-//    std::set<FunctionWrapper*> sen_FuncSet;
-//    std::set<FunctionWrapper*> ins_FuncSet;
-//
-//    std::map<const llvm::Function *, FunctionWrapper *>::iterator FI =
-//            funcMap.begin();
-//    std::map<const llvm::Function *, FunctionWrapper *>::iterator FE =
-//            funcMap.end();
-//    for (; FI != FE; ++FI) {
-//        if (!(*FI).first->isDeclaration()) {
-//            funcs_count++;
-////            if ((*FI).second->hasFuncOrFilePtr()) {
-////                errs() << (*FI).first->getName() << " hasFuncOrFilePtr()\n";
-////            }
-//
-//            if ((*FI).second->isVisited()) {
-//                errs() << (*FI).first->getName() << " is
-//                colored(sensitive)\n";
-//
-//                Function* func = (*FI).second->getFunction();
-//                errs() << "func name = " << func->getName() << "\n";
-//
-//                sen_FuncSet.insert((*FI).second);
-//            } else {
-//                errs() << (*FI).first->getName() << " is uncolored\n";
-//                ins_FuncSet.insert((*FI).second);
-//            }
-//        }
-//    }
-//}
+       for(int i = 0; i < sensitive_values.size(); i++){
+           if(sensitive_values[i] == pInstruction){
+               errs() << "sensitive_values " << i << " == "<< *pInstruction
+               << "\n"; sensitive_nodes.push_back(InstW);
+           }
+       }
+
+       if(InstW->getType() == GLOBAL_VALUE){
+           GlobalValue *gv = dyn_cast<GlobalValue>(InstW->getValue());
+           if(senGlobalSet.end() != senGlobalSet.find(gv)){
+               errs() << "sensitive_global: " << *gv <<"\n";
+               sensitive_nodes.push_back(InstW);
+           }
+       }
+   }
+
+   for(int i = 0; i < sensitive_nodes.size(); i++){
+       queue.push_back(sensitive_nodes[i]);
+   }
+
+   errs() << "queue.size = " << queue.size() << "\n";
+
+   while(!queue.empty()){
+       InstructionWrapper *InstW =
+       const_cast<InstructionWrapper*>(queue.front()); if(InstW->getType() ==
+       INST){
+           funcMap[InstW->getFunction()]->setVisited(true);
+       }
+       queue.pop_front();
+
+       if(InstW->getValue() != nullptr) {
+           coloredInstSet.insert(InstW);
+       }
+
+       DependencyNode<InstructionWrapper>* DNode = PDG->getNodeByData(InstW);
+       for(int i = 0; i < DNode->getDependencyList().size(); i++){
+           if(nullptr != DNode->getDependencyList()[i].first->getData()){
+               InstructionWrapper *adjacent_InstW =
+               *instnodes.find(const_cast<InstructionWrapper*>(DNode->getDependencyList()[i].first->getData()));
+               if(true != adjacent_InstW->getFlag()){
+                   queue.push_back(DNode->getDependencyList()[i].first->getData());
+                   adjacent_InstW->setFlag(true); //label the adjacent node
+                   visited
+               }
+           }
+       }
+   }
+
+   errs() << "\n\n++++++++++The FUNCTION List is as follows:++++++++++\n\n";
+
+   unsigned int funcs_count = 0;
+   unsigned int sen_funcs_count = 0;
+   unsigned int ins_funcs_count = 0;
+
+   std::set<FunctionWrapper*> sen_FuncSet;
+   std::set<FunctionWrapper*> ins_FuncSet;
+
+   std::map<const llvm::Function *, FunctionWrapper *>::iterator FI =
+           funcMap.begin();
+   std::map<const llvm::Function *, FunctionWrapper *>::iterator FE =
+           funcMap.end();
+   for (; FI != FE; ++FI) {
+       if (!(*FI).first->isDeclaration()) {
+           funcs_count++;
+           if ((*FI).second->hasFuncOrFilePtr()) {
+               errs() << (*FI).first->getName() << " hasFuncOrFilePtr()\n";
+           }
+
+           if ((*FI).second->isVisited()) {
+               errs() << (*FI).first->getName() << " is
+               colored(sensitive)\n";
+
+               Function* func = (*FI).second->getFunction();
+               errs() << "func name = " << func->getName() << "\n";
+
+               sen_FuncSet.insert((*FI).second);
+           } else {
+               errs() << (*FI).first->getName() << " is uncolored\n";
+               ins_FuncSet.insert((*FI).second);
+           }
+       }
+   }
+}
+#endif
+
 
 bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
   std::set<std::string> funcList = {"___might_sleep",
@@ -1120,124 +1100,26 @@ pdg::ProgramDependencyGraph::getStructLayout(llvm::Module &M,
   return StL;
 }
 
-std::map<std::string, bool> pdg::ProgramDependencyGraph::getArgUseInfoInFunc(llvm::Module &M, llvm::Function *start_func) {
-    std::queue<llvm::Function *> func_queue;
-    func_queue.push(start_func);
+// pdg::ProgramDependencyGraph::getArgUseInfoMap(llvm::Function *func) {
     
-    while (!func_queue.empty()) {
-        llvm::Function *cur_func = func_queue.front();        
-        func_queue.pop();
+// }
 
-        // TODO: getArgUseInfoMap lacking
-        std::map<std::string, bool> new_arg_use_info_map = getArgUseInfoMap(M, cur_func);
+// pdg::ProgramDependencyGraph::ArgUseInfoMap pdg::ProgramDependencyGraph::initializeArgUseMapForAllFuncs(llvm::Module &M) {
+//     pdg::ProgramDependencyGraph::ArgUseInfoMap global_func_arg_use_info;
+//     typedef std::map<unsigned, std::pair<std::string, DIType *>> offsetNames;
+//     std::map<Function *, offsetNames> funcArgOffsetNames = getAnalysis<DSAGenerator>().getFuncArgOffsetNames();
 
-        // TODO: implementation of global arg use info lacking
-        std::map<std::string, bool> old_arg_use_info_map = global_arg_use_info_map[cur_func];
+//     for (llvm::Function &F : M) {
+//         if (F.isDeclaration()) {
+//             continue;
+//         }
 
-        // TODO: implementation of compare_map_equality
-        if (new_arg_use_info_map == old_arg_use_info_map) {
-            continue;
-        }         
+//         std::map<std::string, bool> arg_use_info_map = getArgUseInfoMap(F, );
+//         global_func_arg_use_info.insert(std::make_pair<llvm::Function *, std::map<std::string, bool>>(&F, arg_use_info_map));
+//     }
 
-        // get all dependent functions. If arg use for this function change, also
-        // update all arg use info for all dependent functions
-        // TODO: getDependentFuncList lacking
-        std::set<llvm::Function *> dependent_func_list = getDependentFuncList(cur_func);
-        for (llvm::Function * func : dependent_func_list) {
-            func_queue.push(func);
-            update_arg_use_info(func, new_arg_use_info_map);
-        }  
-    }
-
-    return global_arg_use_info_map[start_func];
-}
-
-std::map<std::string, bool> pdg::ProgramDependencyGraph::getArgUseInfoMap(llvm::Module &M, llvm::Function *func) {
-  std::map<std::string, bool> arg_use_info_map;
-
-  typedef std::map<unsigned, std::pair<std::string, DIType *>> offsetNames;
-  // get function to arg name map
-  std::map<Function *, offsetNames> funcArgOffsetNames = getAnalysis<DSAGenerator>().getFuncArgOffsetNames();
-
-  offsetNames funcOffsetNames = funcArgOffsetNames[func];
-  std::list<ArgumentWrapper *> arg_list = funcMap[func]->getArgWList();
-
-  for (auto argW : arg_list) {
-    auto treeIter = argW->getTree(FORMAL_IN_TREE).begin();
-    int prev_offset = 0;
-    int accumulate_offset = 0;
-    int curDepth = 0;
-
-    // iterate through parameter tree.
-    // summarize field name information with used information
-    for (; treeIter != argW->getTree(FORMAL_IN_TREE).end(); ++treeIter) {
-      int tmpDepth = argW->getTree(FORMAL_IN_TREE).depth(treeIter);
-      // make sure we are fetching the code at the same level in the
-      // parameter tree
-      if (tmpDepth != curDepth) {
-        // updating the depth to the new level
-        curDepth = tmpDepth;
-        prev_offset += accumulate_offset;
-        accumulate_offset = 0;
-      }
-
-      InstructionWrapper *curTyNode = *treeIter;
-      llvm::Type *parentType = curTyNode->getParentType();
-
-      if (parentType != nullptr) {
-        DEBUG(dbgs() << "Parent Type: "
-                     << curTyNode->getParentType()->getTypeID() << "\n");
-      } else {
-        DEBUG(dbgs() << "This is the root type node. "
-                     << "\n");
-        errs() << "** Root type node **"
-               << "\n";
-        errs() << "Visited status: " << curTyNode->getVisited() << "\n";
-        continue;
-      }
-
-      auto parentIter = tree<InstructionWrapper *>::parent(treeIter);
-      if (parentType->isPointerTy()) {
-        const StructLayout *stLayout = getStructLayout(M, *parentIter);
-        if (stLayout == nullptr) {
-          errs() << "Struct Layout is nullptr. Continue"
-                 << "\n";
-          continue;
-        }
-
-        // get current field offset
-        int offset = stLayout->getElementOffset(curTyNode->getFieldId());
-
-        // get field name and field type node visit information
-        std::string field_name = funcOffsetNames[prev_offset + offset].first;
-        bool isVisited = curTyNode->getVisited();
-
-        arg_use_info_map[field_name] = isVisited;
-        
-        // check 
-        if (tmpDepth == curDepth) {
-          accumulate_offset = offset;
-        }
-      }
-      errs() << "..................................................\n";
-    }
-  }
-}
-
-std::set<llvm::Function *> pdg::ProgramDependencyGraph::getDependentFuncList(llvm::Function *start_func) {
-    std::set<llvm::Function *> dependen_func_list;
-
-    std::queue<llvm::Function *> func_queue;
-    func_queue.push(start_func);
-
-    // CallGraph &call_graph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-    // while (!func_queue.empty()) {
-    //     llvm::Function *cur_func = func_queue.front();
-    //     func_queue.pop();
-
-        
-    // }
-}
+//     return global_func_arg_use_info;
+// }
 
 
 void pdg::ProgramDependencyGraph::printArgUseInfo(
