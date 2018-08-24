@@ -10,9 +10,7 @@
 #include "ControlDependencies.h"
 #include "DataDependencies.h"
 
-#include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Intrinsics.h" #include "llvm/IR/LLVMContext.h" #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/ValueSymbolTable.h"
 #include "llvm/Analysis/CallGraph.h"
 
@@ -66,15 +64,23 @@ namespace pdg {
 
         void drawDependencyTree(Function *func);
 
-        std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> getParameterTreeNodeWithCorrespondGEP(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI);
+        std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> getParameterTreeNodeWithCorrespondGEP(ArgumentWrapper *argW, tree<InstructionWrapper *>::iterator formal_in_TI);
 
-        void linkTypeNodeWithGEPInst(std::list<ArgumentWrapper *>::iterator argI, tree<InstructionWrapper *>::iterator formal_in_TI);
+        int getGEPOpType(llvm::GetElementPtrInst *gep);
+
+        void linkTypeNodeWithGEPInst(ArgumentWrapper *argW, tree<InstructionWrapper *>::iterator formal_in_TI);
 
         void connectFunctionAndFormalTrees(Function *callee);
 
         int connectCallerAndCallee(InstructionWrapper *CInstW, llvm::Function *callee);
 
         const StructLayout* getStructLayout(llvm::Module &M, InstructionWrapper *curTyNode);
+
+        void printArgUseInfoWithRecursiveFunc(llvm::Function *func);
+
+        std::set<pdg::InstructionWrapper *> getAllRelevantGEP(llvm::Argument *arg, std::set<llvm::Function *> seen_funcs);
+
+        void printParameterTreeForFunc(llvm::Module &M);
 
         void printArgUseInfo(llvm::Module &M, std::set<std::string> funcNameList);
 

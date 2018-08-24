@@ -134,6 +134,7 @@ namespace pdg {
       std::list<llvm::Instruction *> returnInstList;
       std::list<llvm::CallInst *> callInstList;
       std::list<ArgumentWrapper *> argWList;
+      std::set<llvm::Function *> dependent_funcs;
       std::set<llvm::Value *> ptrSet;
 
       bool treeFlag = false;
@@ -141,7 +142,6 @@ namespace pdg {
 
     public:
       FunctionWrapper(Function *Func) {
-
         this->Func = Func;
         this->entryW = NULL;
         for (Function::arg_iterator argIt = Func->arg_begin(),

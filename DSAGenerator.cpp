@@ -238,23 +238,29 @@ bool DSAGenerator::runOnModule(Module &M) {
         if (F->isDeclaration()) {
             continue;
         }
+
+        std::map<unsigned, offsetNames> argNoToFieldNames;
         // iterate dgb and
         for (Argument &arg : F->args()) {
             if (arg.getType()->isPointerTy()) {
                 std::string structName;
-                errs()<<printinfo << "arg.getArgNo(){"<<arg.getArgNo()<<"}\n";
+                errs()<<printinfo << "arg.getArgNo(){ "<<arg.getArgNo()<<" }\n";
                 errs() << printinfo<<"CALL getArgFieldNames on line 521 with these parameters:\n";
                 errs() << printinfo<<"F, s.t F.getName() = "<<F->getName()<<"\n";
                 errs() << printinfo<<"arg.getArgNo() + 1 = "<<arg.getArgNo() + 1<<"\n";
                 errs() << printinfo<<"arg.getName() = "<<arg.getName()<<"\n";
                 offsetNames of = getArgFieldNames(F, arg.getArgNo() + 1, arg.getName(), structName);
-                funcArgOffsetMap[F] = of;
+                //funcArgOffsetMap[F] = of;
+                argNoToFieldNames[arg.getArgNo()] = of;
                 errs() << printinfo<< "structName = " << structName <<"\n";
                 errs() << printinfo<<"CALL dumpOffsetNames on line 523\n";
                 //dumpOffsetNames(of);
             }
         }
+
+        funcArgOffsetMap[F] = argNoToFieldNames;
     }
+
     return false;
 }
 

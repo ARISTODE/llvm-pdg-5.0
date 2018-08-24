@@ -26,6 +26,12 @@ using namespace llvm;
 
 namespace pdg{
 
+    enum AccessType{
+        NOACCESS = 0,
+        READ_FIELD,
+        WRITE_FIELD 
+    };
+
     enum DependencyType {
         CALL = 0,
         CONTROL,
@@ -69,6 +75,7 @@ namespace pdg{
         bool flag;   // for separation algorithm coloring
         bool isVisited; // avoid multiple access by for iteration in PDG construction
         tree<InstructionWrapper *> containedNodes;
+        int access_type; // read/write info
 
     public:
         InstructionWrapper(llvm::Instruction *Inst, llvm::Function *Func,
@@ -85,6 +92,7 @@ namespace pdg{
             this->parent_type = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         // for function argument node(formal in/out)
@@ -105,6 +113,7 @@ namespace pdg{
             this->value = arg;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Function *Func, llvm::Instruction *inst, llvm::Argument *arg,
@@ -122,6 +131,7 @@ namespace pdg{
             this->value = arg;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Function *Func, llvm::Argument *arg,
@@ -138,6 +148,7 @@ namespace pdg{
             this->parent_type = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Function *Func, InstWrapperType type) {
@@ -151,6 +162,7 @@ namespace pdg{
             this->arg = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Instruction *Inst, llvm::BasicBlock *BB,
@@ -166,6 +178,7 @@ namespace pdg{
             this->parent_type = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Instruction *Inst, llvm::Function *Func,
@@ -181,6 +194,7 @@ namespace pdg{
             this->parent_type = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Instruction *Inst, llvm::Function *Func, int field_id,
@@ -196,6 +210,7 @@ namespace pdg{
             this->parent_type = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
 
         InstructionWrapper(llvm::Function *Func, int field_id,
@@ -211,9 +226,8 @@ namespace pdg{
             this->parent_type = nullptr;
             this->flag = false;
             this->isVisited = false;
+            this->access_type = NOACCESS;
         }
-
-
 
         std::string getFunctionName() const { return (this->Func->getName()).str(); }
 
@@ -246,6 +260,10 @@ namespace pdg{
         bool getVisited() const { return isVisited; }
 
         void setVisited(const bool _isVisited) { isVisited = _isVisited; }
+
+        int getAccessType() {return access_type;}
+
+        void setAccessType(int _access_type) { access_type = _access_type; }
     };
 
 

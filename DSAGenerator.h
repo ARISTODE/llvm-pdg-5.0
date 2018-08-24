@@ -30,7 +30,10 @@ public:
 
     typedef std::map<unsigned, std::pair<std::string, DIType *>> offsetNames;
 
-    std::map<Function*, offsetNames> funcArgOffsetMap;
+    // store argument offset correspond to arg field names. (pointer type)
+    std::map<Function*, std::map<unsigned, offsetNames>> funcArgOffsetMap;
+
+    //std::map<Function*, offsetNames> funcArgOffsetMap;
 
     std::string moduleName = "[dsa-gen]";
 
@@ -40,7 +43,7 @@ public:
 
     DIType* getLowestDINode(DIType *Ty);
 
-    std::map<Function*, offsetNames> getFuncArgOffsetNames() {
+    std::map<Function*, std::map<unsigned, offsetNames>> getFuncArgOffsetNames() {
         return funcArgOffsetMap;
     }
 

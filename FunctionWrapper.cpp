@@ -89,7 +89,7 @@ bool pdg::FunctionWrapper::hasFuncOrFilePrt() {
 
 llvm::Instruction* pdg::ArgumentWrapper::findAllocaInst(Argument *arg) {
         llvm::Instruction *ALLOCA_DEPENDEN_ON_ARG = nullptr;
-        for (auto UB = arg->user_begin(); UB != arg->user_end(); ++ UB) {
+        for (auto UB = arg->user_begin(); UB != arg->user_end(); ++UB) {
                 if(Instruction *userInst = dyn_cast<Instruction>(*UB)) {
                         if (isa<StoreInst>(userInst)) {
                                 for (Instruction::const_op_iterator cuit = userInst->op_begin();
