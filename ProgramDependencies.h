@@ -66,7 +66,7 @@ namespace pdg {
 
         std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> getParameterTreeNodeWithCorrespondGEP(ArgumentWrapper *argW, tree<InstructionWrapper *>::iterator formal_in_TI);
 
-        int getGEPOpType(llvm::GetElementPtrInst *gep);
+        int getGEPOpType(InstructionWrapper *GEPInstW);
 
         void linkTypeNodeWithGEPInst(ArgumentWrapper *argW, tree<InstructionWrapper *>::iterator formal_in_TI);
 
