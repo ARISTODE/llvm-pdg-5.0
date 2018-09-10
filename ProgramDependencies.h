@@ -10,7 +10,9 @@
 #include "ControlDependencies.h"
 #include "DataDependencies.h"
 
-#include "llvm/IR/Intrinsics.h" #include "llvm/IR/LLVMContext.h" #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Intrinsics.h" 
+#include "llvm/IR/LLVMContext.h" 
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/ValueSymbolTable.h"
 #include "llvm/Analysis/CallGraph.h"
 
@@ -74,15 +76,13 @@ namespace pdg {
 
         int connectCallerAndCallee(InstructionWrapper *CInstW, llvm::Function *callee);
 
+        unsigned getStructElementNum(llvm::Module &M, InstructionWrapper *curTyNode);
+
         const StructLayout* getStructLayout(llvm::Module &M, InstructionWrapper *curTyNode);
 
         void printArgUseInfoWithRecursiveFunc(llvm::Function *func);
 
         std::set<pdg::InstructionWrapper *> getAllRelevantGEP(llvm::Argument *arg, std::set<llvm::Function *> seen_funcs);
-
-        void printParameterTreeForFunc(llvm::Module &M);
-
-        void printArgUseInfo(llvm::Module &M, std::set<std::string> funcNameList);
 
         void collectGlobalInstList();
 
@@ -103,6 +103,12 @@ namespace pdg {
         ArgUseInfoMap initializeArgUseMapForAllFuncs(llvm::Module &M);
 
         std::map<std::string, bool> getArgUseInfoMap(llvm::Function &func);
+
+        void printParameterTreeForFunc(llvm::Module &M, std::set<std::string> funcList);
+
+        void printArgUseInfo(llvm::Module &M, std::set<std::string> funcNameList);
+
+        void printArgumentDependentInsts(llvm::Argument *arg);
 
         //void printSensitiveFunctions();
         bool runOnModule(llvm::Module &M);

@@ -8,9 +8,11 @@ target triple = "x86_64-unknown-linux-gnu"
 ; Function Attrs: noinline nounwind optnone uwtable
 define i32 @main() #0 {
 entry:
+  %retval = alloca i32, align 4
   %a = alloca i32, align 4
   %b = alloca i32*, align 8
   %c = alloca i32, align 4
+  store i32 0, i32* %retval, align 4
   store i32 0, i32* %a, align 4
   store i32* %a, i32** %b, align 8
   %0 = load i32, i32* %a, align 4

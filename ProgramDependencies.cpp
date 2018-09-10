@@ -196,7 +196,7 @@ void pdg::ProgramDependencyGraph::buildFormalTree(Argument *arg, TreeType treeTy
         errs() << *arg->getParent()->getFunctionType() << " DEBUG 312: in buildFormalTree: function pointer arg = " << *tyW->getType() << "\n";
     }
     else {
-        errs() << "start building formal type tree!" << "\n";
+        //errs() << "start building formal type tree!" << "\n";
         buildFormalTypeTree(arg, tyW, treeTy, field_pos);
     }
     id = 0;
@@ -207,7 +207,7 @@ void pdg::ProgramDependencyGraph::buildFormalParameterTrees(llvm::Function *call
     auto argE = funcMap[callee]->getArgWList().end();
 
     DEBUG(dbgs() << "Function: " << callee->getName() << " " << *callee->getFunctionType() << "\n");
-    errs() << "Function: " << callee->getName() << " " << *callee->getFunctionType() << "\n";
+    // errs() << "Function: " << callee->getName() << " " << *callee->getFunctionType() << "\n";
 
     for(; argI != argE; ++argI){
         int field_pos = 0;
@@ -370,28 +370,33 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
     }
 
     // old way, process four trees at the same time, remove soon
-    list<ArgumentWrapper *>::iterator formal_argI;
-    formal_argI = funcMap[callee]->getArgWList().begin();
+    list<ArgumentWrapper *>::iterator formal_argI = funcMap[callee]->getArgWList().begin();
 
-    list<ArgumentWrapper *>::iterator formal_argE;
-    formal_argE = funcMap[callee]->getArgWList().end();
+    list<ArgumentWrapper *>::iterator formal_argE = funcMap[callee]->getArgWList().end();
 
-    list<ArgumentWrapper *>::iterator actual_argI;
-    actual_argI = callMap[CI]->getArgWList().begin();
+    list<ArgumentWrapper *>::iterator actual_argI = callMap[CI]->getArgWList().begin();
+    //list<ArgumentWrapper *>::iterator actual_argE;
 
-    list<ArgumentWrapper *>::iterator actual_argE;
     callMap[CI]->getArgWList().end();
 
     // increase formal/actual tree iterator simutaneously
     for (; formal_argI != formal_argE; ++formal_argI, ++actual_argI) {
+        tree<InstructionWrapper *> formal_in_tree = (*formal_argI)->getTree(FORMAL_IN_TREE);
+        tree<InstructionWrapper *> formal_out_tree = (*formal_argI)->getTree(FORMAL_OUT_TREE);
+        tree<InstructionWrapper *> actual_in_tree = (*actual_argI)->getTree(ACTUAL_IN_TREE);
+        tree<InstructionWrapper *> actual_out_tree = (*actual_argI)->getTree(ACTUAL_OUT_TREE);
+
+        if (formal_in_tree.empty() || actual_in_tree.empty() || formal_out_tree.empty() || actual_out_tree.empty()) {
+            break;
+        }
 
         // intra-connection between ACTUAL/FORMAL IN/OUT trees
         for (tree<InstructionWrapper *>::iterator
-                     actual_in_TI = (*actual_argI)->getTree(ACTUAL_IN_TREE).begin(),
-                     actual_in_TE = (*actual_argI)->getTree(ACTUAL_IN_TREE).end(),
-                     formal_in_TI = (*formal_argI)->getTree(FORMAL_IN_TREE).begin(), // TI2
-                     formal_out_TI = (*formal_argI)->getTree(FORMAL_OUT_TREE).begin(), // TI3
-                     actual_out_TI = (*actual_argI)->getTree(ACTUAL_OUT_TREE).begin(); // TI4
+                     actual_in_TI = actual_in_tree.begin(),
+                     actual_in_TE = actual_in_tree.end(),
+                     formal_in_TI = formal_in_tree.begin(), // TI2
+                     formal_out_TI = formal_out_tree.begin(), // TI3
+                     actual_out_TI = actual_out_tree.begin(); // TI4
              actual_in_TI != actual_in_TE;
              ++actual_in_TI, ++formal_in_TI, ++formal_out_TI, ++actual_out_TI) {
 
@@ -405,8 +410,8 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
 
         // 3. ACTUAL_OUT --> LoadInsts in #Caller# function
         for (tree<InstructionWrapper *>::iterator
-                     actual_out_TI = (*actual_argI)->getTree(ACTUAL_OUT_TREE).begin(),
-                     actual_out_TE = (*actual_argI)->getTree(ACTUAL_OUT_TREE).end();
+                     actual_out_TI = actual_out_tree.begin(),
+                     actual_out_TE = actual_out_tree.end();
              actual_out_TI != actual_out_TE; ++actual_out_TI) {
 
             // must handle nullptr case first
@@ -443,14 +448,16 @@ int pdg::ProgramDependencyGraph::connectCallerAndCallee(InstructionWrapper *Inst
 }
 
 std::vector<std::pair<pdg::InstructionWrapper *, pdg::InstructionWrapper *>>
-pdg::ProgramDependencyGraph::getParameterTreeNodeWithCorrespondGEP(
-    ArgumentWrapper *argW, tree<InstructionWrapper *>::iterator formal_in_TI) {
-
+pdg::ProgramDependencyGraph::getParameterTreeNodeWithCorrespondGEP(ArgumentWrapper *argW, tree<InstructionWrapper *>::iterator formal_in_TI) {
   std::set<llvm::Function *> seen_funcs;
-  // find all GEP elements, including GEP in nested call through function call
+  // find all GEP elements, including GEP in nested call through function call. Avoid repeat function
   std::set<InstructionWrapper *> RelevantGEPList = getAllRelevantGEP(argW->getArg(), seen_funcs);
+  seen_funcs.clear();
+
   std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> treeNodeGepPairs;
   for (auto GEPInstW : RelevantGEPList) {
+    errs() << "[" << GEPInstW->getInstruction()->getFunction()->getName() << "]";
+    errs() << *GEPInstW->getInstruction() << "\n";
     int operand_num = GEPInstW->getInstruction()->getNumOperands();
     llvm::Value *last_idx = GEPInstW->getInstruction()->getOperand(operand_num - 1);
 
@@ -481,13 +488,15 @@ pdg::ProgramDependencyGraph::getParameterTreeNodeWithCorrespondGEP(
       }
 
       // check the src type in GEP inst is equal to parent_type (GET FROM)
-      bool match = GEPSrcTy == parent_type;
+      bool match = (GEPSrcTy == parent_type);
       // check if the offset is equal
       int field_offset = (*formal_in_TI)->getFieldId();
       // if (field_idx+1 == relative_idx && GEPResTy == TreeNodeTy && match) {
       if (field_idx == field_offset && GEPResTy == TreeNodeTy && match) {
         // also add this GEP to the list of GEP that directly access
         // parameter.
+        errs() << "[" << GEPInstW->getInstruction()->getFunction()->getName() << "]";
+        errs() << *GEPInstW->getInstruction() << "\n";
         treeNodeGepPairs.push_back(std::make_pair(*instnodes.find(*formal_in_TI), GEPInstW));
       }
     }
@@ -506,10 +515,21 @@ pdg::ProgramDependencyGraph::getParameterTreeNodeWithCorrespondGEP(
     instWQueue.push(GEPInstW);
     seenInstW.insert(GEPInstW);
 
-    errs() << "find DDG relevant insts" << "\n";
+    if (GEPInstW->getInstruction() == nullptr) {
+        return 0;
+    }
+
     while (!instWQueue.empty()) {
         InstructionWrapper *instW = instWQueue.front();
         instWQueue.pop();
+        if (instW == nullptr) {
+            continue;
+        }
+
+        llvm::Instruction *tmpInst = instW->getInstruction();
+        if (tmpInst != nullptr) {
+            errs() << *instW->getInstruction() << "\n";
+        }
         pdg::DependencyNode<InstructionWrapper> *dataDNode = PDG->getNodeByData(instW);
         pdg::DependencyNode<InstructionWrapper>::DependencyLinkList dataDList = dataDNode->getDependencyList();
 
@@ -522,11 +542,14 @@ pdg::ProgramDependencyGraph::getParameterTreeNodeWithCorrespondGEP(
           instWQueue.push(DNodeW2);
           seenInstW.insert(DNodeW2);
 
+          if (DNodeW2 == nullptr) {
+              errs() << "Dependent Inst empty..." << "\n";
+              continue;
+          }
+
           if (DNodeW2->getInstruction() == nullptr) {
             errs() << "Type Node" << "\n";
             continue;
-          } else {
-            errs() << *DNodeW2->getInstruction() << "\n";
           }
 
           if (isa<llvm::LoadInst>(DNodeW2->getInstruction())) {
@@ -547,22 +570,24 @@ void pdg::ProgramDependencyGraph::linkTypeNodeWithGEPInst(
     ArgumentWrapper *argW,
     tree<InstructionWrapper *>::iterator formal_in_TI) {
 
-  std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>>
-      treeNodeWithCorrespondGEP = getParameterTreeNodeWithCorrespondGEP(argW, formal_in_TI);
+  std::vector<std::pair<InstructionWrapper *, InstructionWrapper *>> treeNodeWithCorrespondGEP = getParameterTreeNodeWithCorrespondGEP(argW, formal_in_TI);
 
   for (auto node_gep_pair : treeNodeWithCorrespondGEP) {
     InstructionWrapper* typeNodeW = node_gep_pair.first;
     InstructionWrapper* gepNodeW = node_gep_pair.second;
     PDG->addDependency(typeNodeW, gepNodeW, STRUCT_FIELDS);
     typeNodeW->setVisited(true);
+
     //collecting R/W information 
 
+    // 1. test if is a GEP instruction
     if (!isa<llvm::GetElementPtrInst>(gepNodeW->getInstruction())) {
         continue;
     }
 
     int gepAccessType = getGEPOpType(gepNodeW);
     int old_type = typeNodeW->getAccessType();
+    
     if (gepAccessType < old_type) {
       continue; // if access info not changed, continue processing
     }
@@ -570,11 +595,11 @@ void pdg::ProgramDependencyGraph::linkTypeNodeWithGEPInst(
     typeNodeW->setAccessType(gepAccessType);
     // need to update all parent node's information
     auto parentIter = tree<InstructionWrapper *>::parent(formal_in_TI);
-    while (parentIter != nullptr) {
-      InstructionWrapper *parentInstW = (*parentIter);
-      parentInstW->setAccessType(gepAccessType);
-      parentIter = tree<InstructionWrapper *>::parent(parentIter);
-    }
+    // while (parentIter != nullptr) {
+    //   InstructionWrapper *parentInstW = (*parentIter);
+    //   parentInstW->setAccessType(gepAccessType);
+    //   parentIter = tree<InstructionWrapper *>::parent(parentIter);
+    // }
   }
 }
 
@@ -686,13 +711,22 @@ std::vector<llvm::Function *> pdg::ProgramDependencyGraph::collectIndirectCallCa
     std::map<const llvm::Function *, FunctionWrapper *>::iterator FE = funcMap.end();
     for (; FI != FE; ++FI) {
         llvm::Function *curFunc = const_cast<llvm::Function *>((*FI).first);
+        // get Function type
         llvm::FunctionType *curFuncType = curFunc->getFunctionType();
 
         if (curFunc->getFunctionType() == funcType && curFunc->getName() != "main") {
             DEBUG(dbgs() << curFunc->getName() << " function pointer! \n");
         }
 
+        if (curFunc->getName() == "main") {
+            continue;
+        }
+        
+        // compare the indirect call function type with each function
         if (ifFuncTypeMatch(curFuncType, funcType)) {
+        //    errs() << "Current Function Name: " << curFunc->getName() << "\n";
+        //    errs() << "Current Func Type: " << *curFuncType << "\n";
+        //    errs() << "CmpFuncType: " << *funcType << "\n";
            indirectCallList.push_back(curFunc);
         }
     }
@@ -768,6 +802,12 @@ bool pdg::ProgramDependencyGraph::processingCallInst(InstructionWrapper *instW) 
         FunctionType *funcTy = cast<FunctionType>(cast<PointerType>(t)->getElementType());
         // collect all possible function with same function signature
         std::vector<llvm::Function *> indirect_call_candidates = collectIndirectCallCandidates(funcTy);
+        if (indirect_call_candidates.size() == 0) {
+            // errs() << "Indirect Call Parent function: " << pInstruction->getParent()->getName() << "\n";
+            // errs() << *pInstruction << "\n";
+            errs() << "cannot find possible indirect call candidates.." << "\n";
+            return false;
+        }
         CallWrapper *callW = new CallWrapper(CI, indirect_call_candidates);
         callMap[CI] = callW;
         errs() << "indirect call, called Type t = " << *t << "\n";
@@ -862,8 +902,7 @@ bool pdg::ProgramDependencyGraph::processingCallInst(InstructionWrapper *instW) 
   return true;
 }
 
-bool pdg::ProgramDependencyGraph::addNodeDependencies(
-    InstructionWrapper *instW1) {
+bool pdg::ProgramDependencyGraph::addNodeDependencies(InstructionWrapper *instW1) {
   // processing Global instruction
   if (instW1->getInstruction() != nullptr) {
     if (llvm::LoadInst *LDInst =
@@ -1041,7 +1080,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                                     "__rtnl_link_unregister",
                                     "_cond_resched",
                                     "alloc_netdev_mqs",
-                                    "consume_skb",
+                             //       "consume_skb",
                                     "dummy_change_carrier",
                                     "dummy_cleanup_module",
                                     "dummy_dev_init",
@@ -1058,7 +1097,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                                     "eth_random_addr",
                                     "eth_validate_addr",
                                     "ether_setup",
-                                    "free_netdev",
+                              //      "free_netdev",
                                     "free_percpu",
                                     "get_random_bytes",
                                     "is_multicast_ether_addr",
@@ -1068,7 +1107,7 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
                                     "netif_carrier_on",
                                     "nla_data",
                                     "nla_len",
-                                    "register_netdevice",
+                               //     "register_netdevice",
                                     "rtnl_link_unregister",
                                     "rtnl_lock",
                                     "rtnl_unlock",
@@ -1087,9 +1126,12 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
   for (Module::iterator FF = M.begin(), E = M.end(); FF != E; ++FF) {
     DEBUG(dbgs() << "Module Size: " << M.size() << "\n");
     Function *F = dyn_cast<Function>(FF);
-    // if (funcList.find(F->getName()) == funcList.end()) {
-    //     continue;
-    // }
+
+//#ifdef TEST_IDL 
+    if (funcList.find(F->getName()) == funcList.end()) {
+        continue;
+    }
+//#endif
 
     if (F->isDeclaration()) {
       DEBUG(dbgs() << (*F).getName() << " is defined outside!"
@@ -1107,23 +1149,26 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
     cdg = &getAnalysis<ControlDependencyGraph>(*F);
     ddg = &getAnalysis<DataDependencyGraph>(*F);
 
-    // process call nodes, one call node will only be touched
-    // once(!InstW->getAccess)
+    // for each instruction, copy all ddg and cdg dependencies
     for (std::set<InstructionWrapper *>::iterator nodeIt =
              funcInstWList[F].begin();
          nodeIt != funcInstWList[F].end(); ++nodeIt) {
       InstructionWrapper *instW1 = *nodeIt;
-
-      // processing CallInst
-      if (!processingCallInst(instW1)) {
-        continue;
-      }
-
       if (!addNodeDependencies(instW1)) {
         continue;
       }
-    } // end the iteration for finding CallInst
+    }
+
   }   // end for(Module...
+
+  for (Module::iterator FF = M.begin(); FF != M.end(); ++FF) {
+      llvm::Function *F = dyn_cast<llvm::Function>(FF);
+      for (llvm::CallInst *callInst : funcMap[F]->getCallInstList()) {
+          if (!processingCallInst(instMap[callInst])) {
+              continue;
+          }
+      }
+  }
 
 // calculate adding dependency time
 //   auto t1 = std::chrono::high_resolution_clock::now();
@@ -1138,28 +1183,65 @@ bool pdg::ProgramDependencyGraph::runOnModule(Module &M) {
   // printSensitiveFunctions();
   // printArgUseInfo(M, funcList);
 
-  printParameterTreeForFunc(M);
+  printParameterTreeForFunc(M, funcList);
 
   cleanupGlobalVars();
   return false;
 }
 
-const StructLayout *
-pdg::ProgramDependencyGraph::getStructLayout(llvm::Module &M,
-                                             InstructionWrapper *curTyNode) {
+unsigned pdg::ProgramDependencyGraph::getStructElementNum(llvm::Module &M, InstructionWrapper *curTyNode) {
   DataLayout DL = M.getDataLayout();
   llvm::Type *curNodeTy = curTyNode->getFieldType();
 
+  // check if the pointer type is actually a struct pointer 
   PointerType *pt = dyn_cast<PointerType>(curNodeTy);
   if (curNodeTy->isPointerTy()) {
     if (!pt->getElementType()->isStructTy()) {
-      return nullptr;
+      return -1;
     }
+  } else {
+      // if current type is not pointer type, check if the current type is a strut type
+      if (!curNodeTy->isStructTy()) {
+          return -1;
+      }
   }
 
   StructType *st = nullptr;
 
   if (curNodeTy->isPointerTy()) {
+    // cast the pointed type to struct type.(we know it's a struct pointer at this point)
+    st = dyn_cast<StructType>(pt->getElementType());
+  } else {
+    st = dyn_cast<StructType>(curNodeTy);
+  }
+
+    return st->getNumElements();
+}
+
+const StructLayout *
+pdg::ProgramDependencyGraph::getStructLayout(llvm::Module &M,
+                                             InstructionWrapper *curTyNode) {
+
+  DataLayout DL = M.getDataLayout();
+  llvm::Type *curNodeTy = curTyNode->getFieldType();
+
+  // check if the pointer type is actually a struct pointer 
+  PointerType *pt = dyn_cast<PointerType>(curNodeTy);
+  if (curNodeTy->isPointerTy()) {
+    if (!pt->getElementType()->isStructTy()) {
+      return nullptr;
+    }
+  } else {
+      // if current type is not pointer type, check if the current type is a strut type
+      if (!curNodeTy->isStructTy()) {
+          return nullptr;
+      }
+  }
+
+  StructType *st = nullptr;
+
+  if (curNodeTy->isPointerTy()) {
+    // cast the pointed type to struct type.(we know it's a struct pointer at this point)
     st = dyn_cast<StructType>(pt->getElementType());
   } else {
     st = dyn_cast<StructType>(curNodeTy);
@@ -1169,73 +1251,104 @@ pdg::ProgramDependencyGraph::getStructLayout(llvm::Module &M,
   return StL;
 }
 
-void pdg::ProgramDependencyGraph::printParameterTreeForFunc(llvm::Module &M) {
+void pdg::ProgramDependencyGraph::printParameterTreeForFunc(llvm::Module &M, std::set<std::string> funcList) {
+    
   //typedef std::map<unsigned, std::pair<std::string, DIType *>> offsetNames;
   std::map<Function *, std::map<unsigned, DSAGenerator::offsetNames>> funcArgOffsetNames = getAnalysis<DSAGenerator>().getFuncArgOffsetNames();
 
   for (llvm::Function &func : M) {
-    if (func.isDeclaration()) {
+
+    if (funcList.find(func.getName()) == funcList.end()) {
       continue;
     }
 
-    // get offset - name pair
-    //offsetNames funcOffsetNames = funcArgOffsetNames[&func];
-    std::map<unsigned, DSAGenerator::offsetNames> argsOffsetNames = funcArgOffsetNames[&func];
-    // traverse parameter tree, print access information and name for each field
-    FunctionWrapper *funcW = funcMap[&func];
-    errs() << "\n [For function: " << func.getName() << "] \n";
-    for (auto argW : funcW->getArgWList()) {
-      errs() << "Arg use information for arg no: " << argW->getArg()->getArgNo() << "\n";
-      DSAGenerator::offsetNames argOffsetNames = argsOffsetNames[argW->getArg()->getArgNo()];
-      for (auto treeIter = argW->getTree(FORMAL_IN_TREE).begin();
-           treeIter != argW->getTree(FORMAL_IN_TREE).end(); ++treeIter) {
-        int prev_offset = 0;
-        int accumulate_offset = 0;
-        int curDepth = 0;
-        int tmpDepth = argW->getTree(FORMAL_IN_TREE).depth(treeIter);
-        // make sure we are fetching the code at the same level in the
-        // parameter tree
-        if (tmpDepth != curDepth) {
-          // updating the depth to the new level
-          curDepth = tmpDepth;
-          prev_offset += accumulate_offset;
-          accumulate_offset = 0;
-        }
-
-        InstructionWrapper *curTyNode = *treeIter;
-        llvm::Type *parentType = curTyNode->getParentType();
-
-        // for each node in parameter tree, check its' parent type
-        if (parentType != nullptr) {
-          DEBUG(dbgs() << "Parent Type: " << curTyNode->getParentType()->getTypeID() << "\n");
-        } else {
-          errs() << "** Root type node **" << "\n";
-          errs() << "filed name: " << argOffsetNames[0].first << "\n";
-          errs() << "Visited status: " << curTyNode->getVisited() << "\n";
-          errs() << "Visited Type: " << curTyNode->getAccessType() << "\n";
-          continue;
-        }
-
-        auto parentIter = tree<InstructionWrapper *>::parent(treeIter);
-        if (parentType->isPointerTy()) {
-          const StructLayout *stLayout = getStructLayout(M, *parentIter);
-          if (stLayout == nullptr) {
-            errs() << "Struct Layout is nullptr. Continue" << "\n";
-            continue;
-          }
-
-          // field offset relative to parent
-          int offset = stLayout->getElementOffset(curTyNode->getFieldId());
-          errs() << "sub field name: " << argOffsetNames[prev_offset + offset].first << "\n";
-          errs() << "Visit status: " << curTyNode->getVisited() << "\n";
-          errs() << "Visited Type: " << curTyNode->getAccessType() << "\n";
-          if (tmpDepth == curDepth) {
-            accumulate_offset = offset;
-          }
-        }
-        errs() << "..................................................\n";
+    if (func.isDeclaration()) {
+      continue;
       }
-    }
+      // get offset - name pair
+      std::map<unsigned, DSAGenerator::offsetNames> argsOffsetNames = funcArgOffsetNames[&func];
+      // traverse parameter tree, print access information and name for each field
+      FunctionWrapper *funcW = funcMap[&func];
+      errs() << "\n [For function: " << func.getName() << "] \n";
+      for (auto argW : funcW->getArgWList())
+      {
+          errs() << "Arg use information for arg no: " << argW->getArg()->getArgNo() << "\n";
+          DSAGenerator::offsetNames argOffsetNames = argsOffsetNames[argW->getArg()->getArgNo()];
+          for (auto treeIter = argW->getTree(FORMAL_IN_TREE).begin();
+               treeIter != argW->getTree(FORMAL_IN_TREE).end(); ++treeIter)
+          {
+              int prev_offset = 0;
+              int accumulate_offset = 0;
+              int curDepth = 0;
+              int tmpDepth = argW->getTree(FORMAL_IN_TREE).depth(treeIter);
+              // make sure we are fetching the code at the same level in the
+              // parameter tree
+              if (tmpDepth != curDepth)
+              {
+                  // updating the depth to the new level
+                  curDepth = tmpDepth;
+                  prev_offset += accumulate_offset;
+                  accumulate_offset = 0;
+              }
+
+              InstructionWrapper *curTyNode = *treeIter;
+              llvm::Type *parentType = curTyNode->getParentType();
+
+              // for each node in parameter tree, check its' parent type
+              if (parentType != nullptr)
+              {
+                  DEBUG(dbgs() << "Parent Type: " << curTyNode->getParentType()->getTypeID() << "\n");
+              }
+              else
+              {
+                  errs() << "** Root type node **"
+                         << "\n";
+                  errs() << "field name: " << argOffsetNames[0].first << "\n";
+                  errs() << "Visited status: " << curTyNode->getVisited() << "\n";
+                  errs() << "Visited Type: " << curTyNode->getAccessType() << "\n";
+                  continue;
+              }
+
+              auto parentIter = tree<InstructionWrapper *>::parent(treeIter);
+              
+              if (parentType->isPointerTy())
+              {
+                  const StructLayout *stLayout = getStructLayout(M, *parentIter);
+                  if (stLayout == nullptr)
+                  {
+                      errs() << "Struct Layout is nullptr. Continue"
+                             << "\n";
+                      continue;
+                  }
+
+
+                  // field offset relative to parent
+                  unsigned structFieldNum = getStructElementNum(M, *parentIter);
+                  unsigned typeNodeOffset = curTyNode->getFieldId();
+                  if (structFieldNum < 0 || typeNodeOffset >= structFieldNum) {
+                      errs() << "Error offsets:" << structFieldNum << "----" << typeNodeOffset << "\n";
+                      break;
+                  }
+
+                  errs() << structFieldNum << "----" << typeNodeOffset << "\n";
+                  int offset = stLayout->getElementOffset(typeNodeOffset);
+
+                  if (argOffsetNames.find(prev_offset + offset) == argOffsetNames.end()) {
+                      errs() << "Invalid indexing into arg field names" << "\n";
+                      break;
+                  }
+
+                  errs() << "sub field name: " << argOffsetNames[prev_offset + offset].first << "\n";
+                  errs() << "Visit status: " << curTyNode->getVisited() << "\n";
+                  errs() << "Visited Type: " << curTyNode->getAccessType() << "\n";
+                  if (tmpDepth == curDepth)
+                  {
+                      accumulate_offset = offset;
+                  }
+              }
+              errs() << "..................................................\n";
+          }
+      }
   }
 }
 
@@ -1257,7 +1370,6 @@ void pdg::ProgramDependencyGraph::printParameterTreeForFunc(llvm::Module &M) {
 
 std::set<pdg::InstructionWrapper *>
 pdg::ProgramDependencyGraph::getAllRelevantGEP(llvm::Argument *arg, std::set<llvm::Function *> seen_funcs) {
-
   std::queue<InstructionWrapper *> instQueue;
   std::set<InstructionWrapper *> seen_instW;
   std::set<InstructionWrapper *> relevantGEPs;
@@ -1281,10 +1393,11 @@ pdg::ProgramDependencyGraph::getAllRelevantGEP(llvm::Argument *arg, std::set<llv
     instQueue.pop();
     
     DependencyNode<InstructionWrapper> *DNode = PDG->getNodeByData(curInstW);
+    // iterate all PDG instruction. Can find instruction in the other function
     for (int i = 0; i < DNode->getDependencyList().size(); i++) {
-      InstructionWrapper *adjacentInstW = const_cast<InstructionWrapper *>(
-          DNode->getDependencyList()[i].first->getData());
+      InstructionWrapper *adjacentInstW = const_cast<InstructionWrapper *>(DNode->getDependencyList()[i].first->getData());
 
+      // if already seen this instructionW or the adjacentInstW is not valid(not encounter so far), skip
       if (adjacentInstW == nullptr or seen_instW.find(adjacentInstW) != seen_instW.end()) {
         continue;
       }
@@ -1294,7 +1407,8 @@ pdg::ProgramDependencyGraph::getAllRelevantGEP(llvm::Argument *arg, std::set<llv
 
       // process GEP and CallInst
       llvm::Instruction *adjacentInst = adjacentInstW->getInstruction();
-
+      
+      // do not process Type node
       if (adjacentInst == nullptr) {
         continue;
       }
@@ -1305,14 +1419,15 @@ pdg::ProgramDependencyGraph::getAllRelevantGEP(llvm::Argument *arg, std::set<llv
       }
 
       if (llvm::CallInst *call_inst = dyn_cast<llvm::CallInst>(adjacentInst)) {
+        errs() << *adjacentInst << "\n";
         if (isa<llvm::DbgDeclareInst>(call_inst)) {
             continue;
         }
-
         llvm::Function *callee = call_inst->getCalledFunction();
         // indirect call
         if (callee == nullptr) {
           DEBUG(dbgs() << "Find indirect func call, find all GEP in possible funcs ..." << "\n");
+          errs() << "Find indirect func call, find all GEP in possible funcs ..." << "\n";
           llvm::FunctionType *funcType = call_inst->getFunctionType();
           std::vector<llvm::Function *> indirectCallCandidates = collectIndirectCallCandidates(funcType);
           // for each possible function, iterate through its' arguments
@@ -1326,6 +1441,7 @@ pdg::ProgramDependencyGraph::getAllRelevantGEP(llvm::Argument *arg, std::set<llv
               }
           }
         } else {
+          // direct call
           for (auto argIter = callee->arg_begin(); argIter != callee->arg_end(); ++argIter) {
               llvm::Argument *tmp_arg = &*argIter;
               if (tmp_arg->getType() == arg->getType()) {
@@ -1420,6 +1536,53 @@ void pdg::ProgramDependencyGraph::printArgUseInfo(
     }
   }
 }
+
+void pdg::ProgramDependencyGraph::printArgumentDependentInsts(llvm::Argument *arg)
+{
+    std::queue<InstructionWrapper *> instQueue;
+    std::set<InstructionWrapper *> seen_instW;
+    std::set<InstructionWrapper *> relevantGEPs;
+
+    // initialize queue
+    for (auto UB = arg->user_begin(); UB != arg->user_end(); ++UB)
+    {
+        if (llvm::Instruction *userInst = dyn_cast<llvm::Instruction>(*UB))
+        {
+            instQueue.push(instMap[userInst]);
+            seen_instW.insert(instMap[userInst]);
+        }
+    }
+
+    while (!instQueue.empty())
+    {
+        InstructionWrapper *curInstW = instQueue.front();
+        instQueue.pop();
+        DependencyNode<InstructionWrapper> *DNode = PDG->getNodeByData(curInstW);
+        for (int i = 0; i < DNode->getDependencyList().size(); i++)
+        {
+            InstructionWrapper *adjacentInstW = const_cast<InstructionWrapper *>(DNode->getDependencyList()[i].first->getData());
+
+            // if already seen this instructionW or the adjacentInstW is not valid(not encounter so far), skip
+            if (adjacentInstW == nullptr or seen_instW.find(adjacentInstW) != seen_instW.end())
+            {
+                continue;
+            }
+
+            llvm::Instruction *adjacentInst = adjacentInstW->getInstruction();
+
+            if (adjacentInst == nullptr)
+            {
+                continue;
+            }
+
+            errs() << *adjacentInst << "\n";
+            instQueue.push(adjacentInstW);
+            seen_instW.insert(adjacentInstW);
+        }
+    }
+
+}
+
 
 void pdg::ProgramDependencyGraph::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<ControlDependencyGraph>();

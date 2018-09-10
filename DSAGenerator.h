@@ -4,7 +4,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/InstIterator.h"
 
-#include "llvm/Analysis/CDG/ProgramDependencies.h"
+#include "ProgramDependencies.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
 
@@ -47,13 +47,9 @@ public:
         return funcArgOffsetMap;
     }
 
-    void getAllNames(DIType *Ty, std::set<std::string> seen_names, offsetNames &of, unsigned prev_off, std::string baseName, std::string indent, StringRef argName, std::string &structName);
+    void getAllNames(DIType *Ty, std::set<std::string> seen_names, offsetNames &of, unsigned prev_off, std::string baseName, std::string indent, StringRef argName, std::string &structName, std::string func_name);
 
     offsetNames getArgFieldNames(Function *F, unsigned argNumber, StringRef argName, std::string& structName);
-
-    std::vector<DbgDeclareInst *> getDbgDeclareInstInFunction(Function *F);
-
-    std::vector<MDNode*> getParameterNodeInFunction(Function *F);
 
     void dumpOffsetNames(offsetNames &of);
 
